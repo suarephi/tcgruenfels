@@ -1,78 +1,63 @@
 import { supabase } from "./supabase";
 
-export interface User {
-  id: number;
+export interface Profile {
+  id: string;
   username: string;
-  password_hash: string;
   is_admin: boolean;
   created_at: string;
 }
 
 export interface Booking {
   id: number;
-  user_id: number;
+  user_id: string;
   date: string;
   hour: number;
   created_at: string;
   username?: string;
 }
 
-export async function getUserByUsername(username: string): Promise<User | null> {
+export async function getProfileById(id: string): Promise<Profile | null> {
   const { data, error } = await supabase
-    .from("users")
-    .select("*")
-    .eq("username", username)
-    .single();
-
-  if (error || !data) return null;
-  return data as User;
-}
-
-export async function getUserById(id: number): Promise<User | null> {
-  const { data, error } = await supabase
-    .from("users")
+    .from("profiles")
     .select("*")
     .eq("id", id)
     .single();
 
   if (error || !data) return null;
-  return data as User;
+  return data as Profile;
 }
 
-export async function createUser(
-  username: string,
-  passwordHash: string,
-  isAdmin: boolean = false
-): Promise<number> {
+export async function getProfileByUsername(username: string): Promise<Profile | null> {
   const { data, error } = await supabase
-    .from("users")
-    .insert({ username, password_hash: passwordHash, is_admin: isAdmin })
-    .select("id")
+    .from("profiles")
+    .select("*")
+    .eq("username", username)
     .single();
 
-  if (error) throw new Error(error.message);
-  return data.id;
+  if (error || !data) return null;
+  return data as Profile;
 }
 
-export async function getAllUsers(): Promise<User[]> {
+export async function getAllProfiles(): Promise<Profile[]> {
   const { data, error } = await supabase
-    .from("users")
-    .select("id, username, is_admin, created_at")
+    .from("profiles")
+    .select("*")
     .order("created_at", { ascending: false });
 
   if (error) return [];
-  return data as User[];
+  return data as Profile[];
 }
 
-export async function deleteUser(id: number): Promise<boolean> {
-  // Bookings will be deleted automatically due to ON DELETE CASCADE
-  const { error } = await supabase.from("users").delete().eq("id", id);
+export async function deleteProfile(id: string): Promise<boolean> {
+  // This will cascade delete bookings due to FK constraint
+  // We need to delete the auth user which will cascade to profile
+  const { error } = await supabase.auth.admin.deleteUser(id);
   return !error;
 }
 
-export async function setUserAdmin(id: number, isAdmin: boolean): Promise<boolean> {
+export async function setProfileAdmin(id: string, isAdmin: boolean): Promise<boolean> {
   const { error } = await supabase
-    .from("users")
+    .from("profiles")
     .update({ is_admin: isAdmin })
     .eq("id", id);
 
@@ -87,7 +72,7 @@ export async function getBookingsForDateRange(
     .from("bookings")
     .select(`
       *,
-      users!inner(username)
+      profiles!inner(username)
     `)
     .gte("date", startDate)
     .lte("date", endDate)
@@ -96,14 +81,13 @@ export async function getBookingsForDateRange(
 
   if (error) return [];
 
-  // Flatten the username from the joined users table
   return data.map((booking) => ({
     id: booking.id,
     user_id: booking.user_id,
     date: booking.date,
     hour: booking.hour,
     created_at: booking.created_at,
-    username: booking.users.username,
+    username: booking.profiles.username,
   }));
 }
 
@@ -112,7 +96,7 @@ export async function getBookingById(id: number): Promise<Booking | null> {
     .from("bookings")
     .select(`
       *,
-      users!inner(username)
+      profiles!inner(username)
     `)
     .eq("id", id)
     .single();
@@ -125,12 +109,12 @@ export async function getBookingById(id: number): Promise<Booking | null> {
     date: data.date,
     hour: data.hour,
     created_at: data.created_at,
-    username: data.users.username,
+    username: data.profiles.username,
   };
 }
 
 export async function getUserBookingsForDate(
-  userId: number,
+  userId: string,
   date: string
 ): Promise<Booking[]> {
   const { data, error } = await supabase
@@ -159,7 +143,7 @@ export async function getBookingByDateAndHour(
 }
 
 export async function createBooking(
-  userId: number,
+  userId: string,
   date: string,
   hour: number
 ): Promise<number> {
@@ -178,7 +162,7 @@ export async function deleteBooking(id: number): Promise<boolean> {
   return !error;
 }
 
-export async function getUserBookingCount(userId: number): Promise<number> {
+export async function getUserBookingCount(userId: string): Promise<number> {
   const { count, error } = await supabase
     .from("bookings")
     .select("*", { count: "exact", head: true })

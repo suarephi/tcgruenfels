@@ -1,25 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { getAllUsers, getUserBookingCount } from "@/lib/db";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { getAllProfiles, getUserBookingCount, getProfileById } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!session.user.isAdmin) {
+  const profile = await getProfileById(user.id);
+  if (!profile?.is_admin) {
     return NextResponse.json({ error: "Admin access required" }, { status: 403 });
   }
 
-  const users = await getAllUsers();
+  const profiles = await getAllProfiles();
 
   // Add booking count for each user
   const usersWithStats = await Promise.all(
-    users.map(async (user) => ({
-      ...user,
-      bookingCount: await getUserBookingCount(user.id),
+    profiles.map(async (p) => ({
+      ...p,
+      bookingCount: await getUserBookingCount(p.id),
     }))
   );
 

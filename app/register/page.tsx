@@ -5,51 +5,63 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Toast from "@/components/Toast";
 import { useLanguage } from "@/lib/LanguageContext";
+import { createBrowserSupabaseClient } from "@/lib/supabase";
 
 export default function RegisterPage() {
+  const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { t } = useLanguage();
+  const supabase = createBrowserSupabaseClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
 
     if (password !== confirmPassword) {
       setError(t.register.passwordsMismatch);
       return;
     }
 
+    if (username.length < 3) {
+      setError(t.register.usernameMinLength);
+      return;
+    }
+
+    if (password.length < 6) {
+      setError(t.register.passwordMinLength);
+      return;
+    }
+
     setLoading(true);
 
-    try {
-      const res = await fetch("/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          username,
+        },
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
 
-      const data = await res.json();
+    setLoading(false);
 
-      if (!res.ok) {
-        // Translate common errors
-        let errorMsg = data.error;
-        if (data.error?.includes("already taken")) errorMsg = t.register.usernameTaken;
-        if (data.error?.includes("3 characters")) errorMsg = t.register.usernameMinLength;
-        if (data.error?.includes("6 characters")) errorMsg = t.register.passwordMinLength;
-        setError(errorMsg || t.toast.somethingWrong);
-        setLoading(false);
-        return;
+    if (error) {
+      if (error.message.includes("already registered")) {
+        setError(t.register.emailTaken);
+      } else {
+        setError(error.message);
       }
-
-      router.push("/login?registered=true");
-    } catch {
-      setError(t.toast.somethingWrong);
-      setLoading(false);
+    } else {
+      setSuccess(t.register.checkEmail);
     }
   };
 
@@ -57,6 +69,9 @@ export default function RegisterPage() {
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center py-12 px-4">
       {error && (
         <Toast message={error} type="error" onClose={() => setError("")} />
+      )}
+      {success && (
+        <Toast message={success} type="success" onClose={() => setSuccess("")} />
       )}
 
       <div className="w-full max-w-sm">
@@ -72,6 +87,20 @@ export default function RegisterPage() {
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                {t.register.email}
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition text-gray-900"
+                placeholder={t.register.emailPlaceholder}
+                required
+              />
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 {t.register.username}

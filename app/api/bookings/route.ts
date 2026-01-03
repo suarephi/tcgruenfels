@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
 import {
   getBookingsForDateRange,
   getUserBookingsForDate,
   getBookingByDateAndHour,
   createBooking,
+  getProfileById,
 } from "@/lib/db";
 
 // Swiss timezone
@@ -32,12 +32,16 @@ const VIEW_DAYS = 14; // Show 2 weeks of calendar
 const BOOK_DAYS = 3;  // Can only book 3 days ahead (regular users)
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const isAdmin = session.user.isAdmin;
+  const profile = await getProfileById(user.id);
+  const isAdmin = profile?.is_admin || false;
+
   const startDate = getSwissDate(0);
   const endDate = getSwissDate(VIEW_DAYS - 1);
   const bookings = await getBookingsForDateRange(startDate, endDate);
@@ -52,22 +56,25 @@ export async function GET(request: NextRequest) {
     bookings,
     dates,
     maxBookableDate,
-    currentUserId: session.user.id,
+    currentUserId: user.id,
     isAdmin,
   });
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const isAdmin = session.user.isAdmin;
+  const profile = await getProfileById(user.id);
+  const isAdmin = profile?.is_admin || false;
 
   try {
     const { date, hour } = await request.json();
-    const userId = parseInt(session.user.id);
+    const userId = user.id;
 
     // Validate hour
     if (hour < 6 || hour > 21) {

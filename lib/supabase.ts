@@ -1,17 +1,24 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// Create a placeholder client for build time, real client for runtime
-function createSupabaseClient(): SupabaseClient {
-  if (!supabaseUrl || !supabaseServiceKey) {
-    // During build time, return a mock client that will fail at runtime if actually used
-    console.warn("Supabase credentials not configured - using placeholder for build");
-    return createClient("https://placeholder.supabase.co", "placeholder-key");
+// Browser client for client components
+export function createBrowserSupabaseClient() {
+  return createBrowserClient(supabaseUrl, supabaseAnonKey);
+}
+
+// Admin client with service role key (bypasses RLS) - for server-side only
+export function createAdminSupabaseClient() {
+  if (!supabaseServiceKey) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY is required for admin operations");
   }
   return createClient(supabaseUrl, supabaseServiceKey);
 }
 
-// Use service role key for server-side operations (bypasses RLS)
-export const supabase = createSupabaseClient();
+// Legacy export for db.ts compatibility
+export const supabase = supabaseServiceKey
+  ? createClient(supabaseUrl, supabaseServiceKey)
+  : createClient(supabaseUrl, supabaseAnonKey);

@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useSession } from "next-auth/react";
 import Toast from "./Toast";
 import { useLanguage } from "@/lib/LanguageContext";
 
 interface Booking {
   id: number;
-  user_id: number;
+  user_id: string;
   date: string;
   hour: number;
   username: string;
@@ -18,6 +17,7 @@ interface BookingData {
   dates: string[];
   maxBookableDate: string;
   currentUserId: string;
+  isAdmin: boolean;
 }
 
 interface ToastState {
@@ -32,7 +32,6 @@ function formatHour(hour: number): string {
 }
 
 export default function BookingGrid() {
-  const { data: session } = useSession();
   const { language, t } = useLanguage();
   const [data, setData] = useState<BookingData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -234,7 +233,7 @@ export default function BookingGrid() {
       <div className="bg-white rounded-b-xl shadow-sm border border-t-0 border-gray-200 divide-y divide-gray-100">
         {HOURS.map((hour) => {
           const booking = getBooking(selectedDate, hour);
-          const isMyBooking = booking && booking.user_id === parseInt(data.currentUserId);
+          const isMyBooking = booking && booking.user_id === data.currentUserId;
           const key = `${selectedDate}-${hour}`;
           const isLoading = actionLoading === key || actionLoading === `cancel-${booking?.id}`;
 
@@ -259,7 +258,7 @@ export default function BookingGrid() {
                         {isMyBooking ? t.booking.yourBooking : booking.username}
                       </span>
                     </div>
-                    {(isMyBooking || session?.user?.isAdmin) && canBookSelectedDate && (
+                    {(isMyBooking || data?.isAdmin) && canBookSelectedDate && (
                       <button
                         onClick={() => handleCancel(booking.id)}
                         disabled={isLoading}
@@ -331,7 +330,7 @@ export default function BookingGrid() {
 
                 {data.dates.map((date) => {
                   const booking = getBooking(date, hour);
-                  const isMyBooking = booking && booking.user_id === parseInt(data.currentUserId);
+                  const isMyBooking = booking && booking.user_id === data.currentUserId;
                   const key = `${date}-${hour}`;
                   const isLoading = actionLoading === key || actionLoading === `cancel-${booking?.id}`;
                   const canBook = isBookable(date);
@@ -354,7 +353,7 @@ export default function BookingGrid() {
                           <div className={`font-medium ${isMyBooking ? "text-emerald-700" : "text-gray-600"}`}>
                             {isMyBooking ? t.booking.yourBooking : booking.username}
                           </div>
-                          {(isMyBooking || session?.user?.isAdmin) && canBook && (
+                          {(isMyBooking || data?.isAdmin) && canBook && (
                             <button
                               onClick={() => handleCancel(booking.id)}
                               disabled={isLoading}

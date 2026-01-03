@@ -1,16 +1,16 @@
 "use client";
 
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useLanguage } from "@/lib/LanguageContext";
+import { createBrowserSupabaseClient } from "@/lib/supabase";
 import Toast from "@/components/Toast";
 
 interface User {
-  id: number;
+  id: string;
   username: string;
-  is_admin: number;
+  is_admin: boolean;
   created_at: string;
   bookingCount: number;
 }
@@ -21,13 +21,14 @@ interface ToastState {
 }
 
 export default function AdminPage() {
-  const { data: session, status } = useSession();
   const router = useRouter();
   const { language, t } = useLanguage();
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<ToastState | null>(null);
-  const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const supabase = createBrowserSupabaseClient();
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -47,18 +48,33 @@ export default function AdminPage() {
   }, [router, t.toast.somethingWrong]);
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-    } else if (status === "authenticated") {
-      if (!session?.user?.isAdmin) {
-        router.push("/book");
-      } else {
-        fetchUsers();
-      }
-    }
-  }, [status, session, router, fetchUsers]);
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
 
-  const handleToggleAdmin = async (userId: number, makeAdmin: boolean) => {
+      if (!user) {
+        router.push("/login");
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", user.id)
+        .single();
+
+      if (!profile?.is_admin) {
+        router.push("/book");
+        return;
+      }
+
+      setCurrentUserId(user.id);
+      fetchUsers();
+    };
+
+    checkAuth();
+  }, [supabase, router, fetchUsers]);
+
+  const handleToggleAdmin = async (userId: string, makeAdmin: boolean) => {
     setActionLoading(userId);
     try {
       const res = await fetch(`/api/admin/users/${userId}`, {
@@ -81,7 +97,7 @@ export default function AdminPage() {
     }
   };
 
-  const handleDeleteUser = async (userId: number) => {
+  const handleDeleteUser = async (userId: string) => {
     if (!confirm(t.admin.confirmDelete)) return;
 
     setActionLoading(userId);
@@ -113,16 +129,12 @@ export default function AdminPage() {
     });
   };
 
-  if (status === "loading" || loading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
       </div>
     );
-  }
-
-  if (!session?.user?.isAdmin) {
-    return null;
   }
 
   return (
@@ -172,7 +184,7 @@ export default function AdminPage() {
                 </tr>
               ) : (
                 users.map((user) => {
-                  const isCurrentUser = user.id === parseInt(session.user.id);
+                  const isCurrentUser = user.id === currentUserId;
                   const isLoading = actionLoading === user.id;
 
                   return (

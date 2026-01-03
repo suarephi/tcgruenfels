@@ -1,18 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { getBookingById, deleteBooking } from "@/lib/db";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { getBookingById, deleteBooking, getProfileById } from "@/lib/db";
 
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const isAdmin = session.user.isAdmin;
+  const profile = await getProfileById(user.id);
+  const isAdmin = profile?.is_admin || false;
+
   const bookingId = parseInt(params.id);
   const booking = await getBookingById(bookingId);
 
@@ -21,7 +24,7 @@ export async function DELETE(
   }
 
   // Allow users to delete their own bookings, or admins to delete any booking
-  if (!isAdmin && booking.user_id !== parseInt(session.user.id)) {
+  if (!isAdmin && booking.user_id !== user.id) {
     return NextResponse.json(
       { error: "You can only cancel your own bookings" },
       { status: 403 }
