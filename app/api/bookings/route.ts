@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
   const isAdmin = profile?.is_admin || false;
 
   try {
-    const { date, hour } = await request.json();
+    const { date, hour, partnerId } = await request.json();
     const userId = user.id;
 
     // Validate hour
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const bookingId = await createBooking(userId, date, hour);
+    const bookingId = await createBooking(userId, date, hour, partnerId || null);
 
     return NextResponse.json({ id: bookingId }, { status: 201 });
   } catch (error) {

@@ -4,8 +4,8 @@ import Providers from "@/components/Providers";
 import Navbar from "@/components/Navbar";
 
 export const metadata: Metadata = {
-  title: "Tennis Court Booking",
-  description: "Book your tennis court time",
+  title: "TC Grünfels",
+  description: "Tennisplatz Buchung - TC Grünfels",
 };
 
 export default function RootLayout({

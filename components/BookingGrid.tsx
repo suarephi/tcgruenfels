@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Toast from "./Toast";
+import BookingDialog from "./BookingDialog";
 import { useLanguage } from "@/lib/LanguageContext";
 
 interface Booking {
@@ -9,7 +10,16 @@ interface Booking {
   user_id: string;
   date: string;
   hour: number;
-  username: string;
+  first_name: string;
+  last_name: string;
+  partner_first_name?: string;
+  partner_last_name?: string;
+}
+
+interface BookingDialogState {
+  isOpen: boolean;
+  date: string;
+  hour: number;
 }
 
 interface BookingData {
@@ -38,6 +48,11 @@ export default function BookingGrid() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [toast, setToast] = useState<ToastState | null>(null);
+  const [dialog, setDialog] = useState<BookingDialogState>({
+    isOpen: false,
+    date: "",
+    hour: 0,
+  });
 
   const formatDate = useCallback((dateStr: string): string => {
     const date = new Date(dateStr + "T12:00:00");
@@ -93,7 +108,16 @@ export default function BookingGrid() {
     return error;
   }, [t.toast]);
 
-  const handleBook = async (date: string, hour: number) => {
+  const openBookingDialog = (date: string, hour: number) => {
+    setDialog({ isOpen: true, date, hour });
+  };
+
+  const closeBookingDialog = () => {
+    setDialog({ isOpen: false, date: "", hour: 0 });
+  };
+
+  const handleBook = async (partnerId: string | null) => {
+    const { date, hour } = dialog;
     const key = `${date}-${hour}`;
     setActionLoading(key);
 
@@ -101,7 +125,7 @@ export default function BookingGrid() {
       const res = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date, hour }),
+        body: JSON.stringify({ date, hour, partnerId }),
       });
 
       const json = await res.json();
@@ -115,6 +139,7 @@ export default function BookingGrid() {
       showToast(t.toast.somethingWrong, "error");
     } finally {
       setActionLoading(null);
+      closeBookingDialog();
     }
   };
 
@@ -255,7 +280,10 @@ export default function BookingGrid() {
                     <div className="flex items-center gap-2">
                       <div className={`w-2 h-2 rounded-full ${isMyBooking ? "bg-emerald-500" : "bg-gray-400"}`}></div>
                       <span className={`font-medium text-sm ${isMyBooking ? "text-emerald-700" : "text-gray-600"}`}>
-                        {isMyBooking ? t.booking.yourBooking : booking.username}
+                        {isMyBooking ? t.booking.yourBooking : `${booking.first_name} ${booking.last_name}`}
+                        {booking.partner_first_name && (
+                          <span className="text-gray-400 font-normal"> {t.booking.with} {booking.partner_first_name}</span>
+                        )}
                       </span>
                     </div>
                     {(isMyBooking || data?.isAdmin) && canBookSelectedDate && (
@@ -270,7 +298,7 @@ export default function BookingGrid() {
                   </div>
                 ) : canBookSelectedDate ? (
                   <button
-                    onClick={() => handleBook(selectedDate, hour)}
+                    onClick={() => openBookingDialog(selectedDate, hour)}
                     disabled={isLoading}
                     className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition disabled:opacity-50 text-sm font-medium shadow-sm"
                   >
@@ -351,7 +379,10 @@ export default function BookingGrid() {
                           }`}
                         >
                           <div className={`font-medium ${isMyBooking ? "text-emerald-700" : "text-gray-600"}`}>
-                            {isMyBooking ? t.booking.yourBooking : booking.username}
+                            {isMyBooking ? t.booking.yourBooking : `${booking.first_name} ${booking.last_name}`}
+                            {booking.partner_first_name && (
+                              <span className="text-xs text-gray-400 font-normal block"> {t.booking.with} {booking.partner_first_name}</span>
+                            )}
                           </div>
                           {(isMyBooking || data?.isAdmin) && canBook && (
                             <button
@@ -365,7 +396,7 @@ export default function BookingGrid() {
                         </div>
                       ) : canBook ? (
                         <button
-                          onClick={() => handleBook(date, hour)}
+                          onClick={() => openBookingDialog(date, hour)}
                           disabled={isLoading}
                           className="w-full h-full min-h-[44px] bg-emerald-50 hover:bg-emerald-100 text-emerald-600 hover:text-emerald-700 rounded-lg transition disabled:opacity-50 text-sm font-medium border border-emerald-200 hover:border-emerald-300"
                         >
@@ -400,6 +431,15 @@ export default function BookingGrid() {
           onClose={() => setToast(null)}
         />
       )}
+
+      <BookingDialog
+        isOpen={dialog.isOpen}
+        date={dialog.date}
+        hour={dialog.hour}
+        onConfirm={handleBook}
+        onCancel={closeBookingDialog}
+        loading={actionLoading === `${dialog.date}-${dialog.hour}`}
+      />
 
       <MobileView />
       <DesktopView />

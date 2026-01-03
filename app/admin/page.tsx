@@ -9,7 +9,8 @@ import Toast from "@/components/Toast";
 
 interface User {
   id: string;
-  username: string;
+  first_name: string;
+  last_name: string;
   is_admin: boolean;
   created_at: string;
   bookingCount: number;
@@ -168,7 +169,7 @@ export default function AdminPage() {
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="text-left p-4 font-semibold text-gray-700">{t.admin.username}</th>
+                <th className="text-left p-4 font-semibold text-gray-700">{t.admin.name}</th>
                 <th className="text-left p-4 font-semibold text-gray-700">{t.admin.role}</th>
                 <th className="text-left p-4 font-semibold text-gray-700">{t.admin.bookings}</th>
                 <th className="text-left p-4 font-semibold text-gray-700 hidden sm:table-cell">{t.admin.joined}</th>
@@ -193,11 +194,11 @@ export default function AdminPage() {
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
                             <span className="text-emerald-700 font-medium text-sm">
-                              {user.username.charAt(0).toUpperCase()}
+                              {user.first_name.charAt(0).toUpperCase()}
                             </span>
                           </div>
                           <span className="font-medium text-gray-900">
-                            {user.username}
+                            {user.first_name} {user.last_name}
                             {isCurrentUser && (
                               <span className="text-gray-400 text-sm ml-1">{t.admin.you}</span>
                             )}

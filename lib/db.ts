@@ -2,7 +2,8 @@ import { supabase } from "./supabase";
 
 export interface Profile {
   id: string;
-  username: string;
+  first_name: string;
+  last_name: string;
   is_admin: boolean;
   created_at: string;
 }
@@ -10,10 +11,14 @@ export interface Profile {
 export interface Booking {
   id: number;
   user_id: string;
+  partner_id: string | null;
   date: string;
   hour: number;
   created_at: string;
-  username?: string;
+  first_name?: string;
+  last_name?: string;
+  partner_first_name?: string;
+  partner_last_name?: string;
 }
 
 export async function getProfileById(id: string): Promise<Profile | null> {
@@ -72,7 +77,8 @@ export async function getBookingsForDateRange(
     .from("bookings")
     .select(`
       *,
-      profiles!inner(username)
+      profiles!bookings_user_id_fkey(first_name, last_name),
+      partner:profiles!bookings_partner_id_fkey(first_name, last_name)
     `)
     .gte("date", startDate)
     .lte("date", endDate)
@@ -84,10 +90,14 @@ export async function getBookingsForDateRange(
   return data.map((booking) => ({
     id: booking.id,
     user_id: booking.user_id,
+    partner_id: booking.partner_id,
     date: booking.date,
     hour: booking.hour,
     created_at: booking.created_at,
-    username: booking.profiles.username,
+    first_name: booking.profiles?.first_name,
+    last_name: booking.profiles?.last_name,
+    partner_first_name: booking.partner?.first_name,
+    partner_last_name: booking.partner?.last_name,
   }));
 }
 
@@ -96,7 +106,8 @@ export async function getBookingById(id: number): Promise<Booking | null> {
     .from("bookings")
     .select(`
       *,
-      profiles!inner(username)
+      profiles!bookings_user_id_fkey(first_name, last_name),
+      partner:profiles!bookings_partner_id_fkey(first_name, last_name)
     `)
     .eq("id", id)
     .single();
@@ -106,10 +117,14 @@ export async function getBookingById(id: number): Promise<Booking | null> {
   return {
     id: data.id,
     user_id: data.user_id,
+    partner_id: data.partner_id,
     date: data.date,
     hour: data.hour,
     created_at: data.created_at,
-    username: data.profiles.username,
+    first_name: data.profiles?.first_name,
+    last_name: data.profiles?.last_name,
+    partner_first_name: data.partner?.first_name,
+    partner_last_name: data.partner?.last_name,
   };
 }
 
@@ -145,11 +160,12 @@ export async function getBookingByDateAndHour(
 export async function createBooking(
   userId: string,
   date: string,
-  hour: number
+  hour: number,
+  partnerId: string | null = null
 ): Promise<number> {
   const { data, error } = await supabase
     .from("bookings")
-    .insert({ user_id: userId, date, hour })
+    .insert({ user_id: userId, date, hour, partner_id: partnerId })
     .select("id")
     .single();
 

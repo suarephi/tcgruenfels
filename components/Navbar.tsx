@@ -8,7 +8,8 @@ import { createBrowserSupabaseClient } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
 
 interface Profile {
-  username: string;
+  first_name: string;
+  last_name: string;
   is_admin: boolean;
 }
 
@@ -28,7 +29,7 @@ export default function Navbar() {
       if (user) {
         const { data } = await supabase
           .from("profiles")
-          .select("username, is_admin")
+          .select("first_name, last_name, is_admin")
           .eq("id", user.id)
           .single();
         setProfile(data);
@@ -97,10 +98,10 @@ export default function Navbar() {
                 <div className="hidden sm:flex items-center gap-2 text-sm text-gray-600">
                   <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
                     <span className="text-emerald-700 font-medium">
-                      {profile?.username?.charAt(0).toUpperCase() || "U"}
+                      {profile?.first_name?.charAt(0).toUpperCase() || "U"}
                     </span>
                   </div>
-                  <span>{profile?.username || user.email}</span>
+                  <span>{profile ? `${profile.first_name} ${profile.last_name}` : user.email}</span>
                   {profile?.is_admin && (
                     <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded">
                       Admin

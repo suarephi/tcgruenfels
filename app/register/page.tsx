@@ -9,7 +9,8 @@ import { createBrowserSupabaseClient } from "@/lib/supabase";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
@@ -29,8 +30,8 @@ export default function RegisterPage() {
       return;
     }
 
-    if (username.length < 3) {
-      setError(t.register.usernameMinLength);
+    if (!firstName.trim() || !lastName.trim()) {
+      setError(t.register.nameRequired);
       return;
     }
 
@@ -46,7 +47,8 @@ export default function RegisterPage() {
       password,
       options: {
         data: {
-          username,
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
         },
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
@@ -101,20 +103,33 @@ export default function RegisterPage() {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                {t.register.username}
-              </label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition text-gray-900"
-                placeholder={t.register.usernamePlaceholder}
-                required
-                minLength={3}
-              />
-              <p className="text-xs text-gray-400 mt-1">{t.register.usernameHint}</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  {t.register.firstName}
+                </label>
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition text-gray-900"
+                  placeholder={t.register.firstNamePlaceholder}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  {t.register.lastName}
+                </label>
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition text-gray-900"
+                  placeholder={t.register.lastNamePlaceholder}
+                  required
+                />
+              </div>
             </div>
 
             <div>
