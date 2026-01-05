@@ -7,6 +7,7 @@ import {
   generateRoundRobinMatches,
   generateSingleEliminationMatches,
   generateGroupKnockoutMatches,
+  createManualMatches,
 } from "@/lib/tournaments";
 
 export async function GET(
@@ -59,22 +60,32 @@ export async function POST(
   }
 
   try {
-    switch (tournament.format) {
-      case "round_robin":
-        await generateRoundRobinMatches(id, participants);
-        break;
-      case "single_elimination":
-        await generateSingleEliminationMatches(id, participants);
-        break;
-      case "group_knockout":
-        await generateGroupKnockoutMatches(
-          id,
-          participants,
-          tournament.settings.groups_count
-        );
-        break;
-      default:
-        return NextResponse.json({ error: "Unknown format" }, { status: 400 });
+    // Check if manual matches were provided
+    const body = await request.json().catch(() => ({}));
+    const manualMatches = body.manualMatches;
+
+    if (manualMatches && Array.isArray(manualMatches)) {
+      // Create matches from manual configuration
+      await createManualMatches(id, manualMatches);
+    } else {
+      // Auto-generate matches based on format
+      switch (tournament.format) {
+        case "round_robin":
+          await generateRoundRobinMatches(id, participants);
+          break;
+        case "single_elimination":
+          await generateSingleEliminationMatches(id, participants);
+          break;
+        case "group_knockout":
+          await generateGroupKnockoutMatches(
+            id,
+            participants,
+            tournament.settings.groups_count
+          );
+          break;
+        default:
+          return NextResponse.json({ error: "Unknown format" }, { status: 400 });
+      }
     }
 
     // Check if matches were created

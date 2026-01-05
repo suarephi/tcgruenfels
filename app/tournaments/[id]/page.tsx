@@ -8,6 +8,7 @@ import Toast from "@/components/Toast";
 import TournamentBracket from "@/components/TournamentBracket";
 import GroupStandings from "@/components/GroupStandings";
 import MatchResultDialog from "@/components/MatchResultDialog";
+import ManualBracketEditor from "@/components/ManualBracketEditor";
 
 interface TournamentSettings {
   groups_count: number;
@@ -94,6 +95,7 @@ export default function TournamentDetailPage() {
   const [doublesPartners, setDoublesPartners] = useState<Record<string, string>>({});
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [viewAsUserId, setViewAsUserId] = useState<string | null>(null);
+  const [showBracketEditor, setShowBracketEditor] = useState(false);
 
   const tournamentId = params.id as string;
 
@@ -228,6 +230,12 @@ export default function TournamentDetailPage() {
   };
 
   const handleGenerateMatches = async () => {
+    // For single elimination, show manual bracket editor
+    if (tournament?.format === "single_elimination") {
+      setShowBracketEditor(true);
+      return;
+    }
+
     setActionLoading("generate-matches");
     try {
       const res = await fetch(`/api/tournaments/${tournamentId}/matches`, {
@@ -236,6 +244,30 @@ export default function TournamentDetailPage() {
 
       if (res.ok) {
         setToast({ message: language === "de" ? "Spielplan erstellt" : "Matches generated", type: "success" });
+        await fetchTournament();
+      } else {
+        const data = await res.json();
+        setToast({ message: data.error || t.toast.somethingWrong, type: "error" });
+      }
+    } catch {
+      setToast({ message: t.toast.somethingWrong, type: "error" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleSaveManualBracket = async (matchSlots: { participant1: { id: string } | null; participant2: { id: string } | null }[]) => {
+    setActionLoading("generate-matches");
+    try {
+      const res = await fetch(`/api/tournaments/${tournamentId}/matches`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ manualMatches: matchSlots }),
+      });
+
+      if (res.ok) {
+        setToast({ message: language === "de" ? "Spielplan erstellt" : "Bracket created", type: "success" });
+        setShowBracketEditor(false);
         await fetchTournament();
       } else {
         const data = await res.json();
@@ -471,7 +503,10 @@ export default function TournamentDetailPage() {
   const tabs: { id: Tab; label: string }[] = [
     { id: "bracket", label: t.tournament.bracket },
     { id: "matches", label: t.tournament.matches },
-    { id: "standings", label: t.tournament.standings },
+    // Only show standings tab for round_robin and group_knockout formats
+    ...(tournament.format !== "single_elimination"
+      ? [{ id: "standings" as Tab, label: t.tournament.standings }]
+      : []),
     { id: "participants", label: t.tournament.participants },
   ];
 
@@ -495,6 +530,17 @@ export default function TournamentDetailPage() {
           participants={participants}
           onSave={handleSaveResult}
           onCancel={() => setMatchDialog({ isOpen: false, match: null })}
+        />
+      )}
+
+      {showBracketEditor && tournament && (
+        <ManualBracketEditor
+          participants={participants}
+          tournamentType={tournament.type}
+          tournamentFormat={tournament.format}
+          onSave={handleSaveManualBracket}
+          onCancel={() => setShowBracketEditor(false)}
+          loading={actionLoading === "generate-matches"}
         />
       )}
 

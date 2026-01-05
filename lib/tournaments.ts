@@ -507,6 +507,63 @@ export async function generateGroupKnockoutMatches(
   // Knockout matches will be generated after group stage completes
 }
 
+// ============ Manual Match Creation ============
+
+interface ManualMatchSlot {
+  participant1: { id: string } | null;
+  participant2: { id: string } | null;
+}
+
+export async function createManualMatches(
+  tournamentId: string,
+  manualMatches: ManualMatchSlot[]
+): Promise<void> {
+  const n = manualMatches.length;
+  const rounds = Math.ceil(Math.log2(n * 2)); // Total rounds needed
+
+  const matches: {
+    tournament_id: string;
+    round: number;
+    match_number: number;
+    stage: MatchStage;
+    participant1_id: string | null;
+    participant2_id: string | null;
+  }[] = [];
+
+  // Create first round matches from manual configuration
+  manualMatches.forEach((slot, index) => {
+    matches.push({
+      tournament_id: tournamentId,
+      round: 1,
+      match_number: index + 1,
+      stage: "knockout",
+      participant1_id: slot.participant1?.id || null,
+      participant2_id: slot.participant2?.id || null,
+    });
+  });
+
+  // Create placeholder matches for subsequent rounds
+  let matchesInRound = Math.floor(n / 2);
+  for (let round = 2; round <= rounds && matchesInRound >= 1; round++) {
+    for (let i = 0; i < matchesInRound; i++) {
+      matches.push({
+        tournament_id: tournamentId,
+        round,
+        match_number: i + 1,
+        stage: "knockout",
+        participant1_id: null,
+        participant2_id: null,
+      });
+    }
+    matchesInRound = Math.floor(matchesInRound / 2);
+  }
+
+  if (matches.length > 0) {
+    const { error } = await supabase.from("tournament_matches").insert(matches);
+    if (error) throw new Error(error.message);
+  }
+}
+
 // ============ Standings Calculation ============
 
 export function calculateGroupStandings(
