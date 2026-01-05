@@ -84,8 +84,8 @@ export default function TournamentDetailPage() {
   // Admin controls state
   const [showAddParticipant, setShowAddParticipant] = useState(false);
   const [allUsers, setAllUsers] = useState<User[]>([]);
-  const [selectedUserId, setSelectedUserId] = useState<string>("");
-  const [selectedPartnerId, setSelectedPartnerId] = useState<string>("");
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [doublesPartners, setDoublesPartners] = useState<Record<string, string>>({});
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const tournamentId = params.id as string;
@@ -142,36 +142,62 @@ export default function TournamentDetailPage() {
     fetchTournament();
   }, [fetchTournament, fetchAllUsers, supabase]);
 
-  const handleAddParticipant = async () => {
-    if (!selectedUserId) return;
+  const handleAddParticipants = async () => {
+    if (selectedUserIds.length === 0) return;
     setActionLoading("add-participant");
+
     try {
-      const body: { userId: string; partnerId?: string } = { userId: selectedUserId };
-      if (tournament?.type === "doubles" && selectedPartnerId) {
-        body.partnerId = selectedPartnerId;
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const userId of selectedUserIds) {
+        const body: { userId: string; partnerId?: string } = { userId };
+        if (tournament?.type === "doubles" && doublesPartners[userId]) {
+          body.partnerId = doublesPartners[userId];
+        }
+
+        const res = await fetch(`/api/tournaments/${tournamentId}/participants`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+
+        if (res.ok) {
+          successCount++;
+        } else {
+          errorCount++;
+        }
       }
 
-      const res = await fetch(`/api/tournaments/${tournamentId}/participants`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      if (res.ok) {
-        setToast({ message: language === "de" ? "Teilnehmer hinzugefügt" : "Participant added", type: "success" });
+      if (successCount > 0) {
+        setToast({
+          message: language === "de"
+            ? `${successCount} Teilnehmer hinzugefügt`
+            : `${successCount} participant${successCount > 1 ? 's' : ''} added`,
+          type: "success"
+        });
         setShowAddParticipant(false);
-        setSelectedUserId("");
-        setSelectedPartnerId("");
+        setSelectedUserIds([]);
+        setDoublesPartners({});
         await fetchTournament();
-      } else {
-        const data = await res.json();
-        setToast({ message: data.error || t.toast.somethingWrong, type: "error" });
+      }
+
+      if (errorCount > 0 && successCount === 0) {
+        setToast({ message: t.toast.somethingWrong, type: "error" });
       }
     } catch {
       setToast({ message: t.toast.somethingWrong, type: "error" });
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const toggleUserSelection = (userId: string) => {
+    setSelectedUserIds(prev =>
+      prev.includes(userId)
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
   };
 
   const handleRemoveParticipant = async (participantId: string) => {
@@ -380,66 +406,83 @@ export default function TournamentDetailPage() {
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setShowAddParticipant(false)}
           />
-          <div className="relative w-full max-w-md card-elevated p-6 animate-scale-in">
+          <div className="relative w-full max-w-lg card-elevated p-6 animate-scale-in max-h-[80vh] flex flex-col">
             <h3 className="font-serif text-xl text-[var(--stone-900)] mb-4">
-              {language === "de" ? "Teilnehmer hinzufügen" : "Add Participant"}
+              {language === "de" ? "Teilnehmer hinzufügen" : "Add Participants"}
             </h3>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[var(--stone-700)] mb-1.5">
-                  {language === "de" ? "Spieler" : "Player"}
-                </label>
-                <select
-                  value={selectedUserId}
-                  onChange={(e) => setSelectedUserId(e.target.value)}
-                  className="input-field"
-                >
-                  <option value="">{language === "de" ? "Spieler auswählen..." : "Select player..."}</option>
-                  {availableUsers.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.first_name} {user.last_name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {tournament?.type === "doubles" && (
-                <div>
-                  <label className="block text-sm font-medium text-[var(--stone-700)] mb-1.5">
-                    {language === "de" ? "Partner" : "Partner"}
-                  </label>
-                  <select
-                    value={selectedPartnerId}
-                    onChange={(e) => setSelectedPartnerId(e.target.value)}
-                    className="input-field"
-                  >
-                    <option value="">{language === "de" ? "Partner auswählen..." : "Select partner..."}</option>
-                    {availableUsers
-                      .filter((u) => u.id !== selectedUserId)
-                      .map((user) => (
-                        <option key={user.id} value={user.id}>
+            <div className="flex-1 overflow-y-auto space-y-2 mb-4">
+              {availableUsers.length === 0 ? (
+                <p className="text-center text-[var(--stone-500)] py-4">
+                  {language === "de" ? "Keine Spieler verfügbar" : "No players available"}
+                </p>
+              ) : (
+                availableUsers.map((user) => {
+                  const isSelected = selectedUserIds.includes(user.id);
+                  return (
+                    <div
+                      key={user.id}
+                      className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                        isSelected
+                          ? "border-[var(--forest-400)] bg-[var(--forest-50)]"
+                          : "border-[var(--stone-200)] hover:border-[var(--stone-300)]"
+                      }`}
+                      onClick={() => toggleUserSelection(user.id)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                            isSelected
+                              ? "border-[var(--forest-600)] bg-[var(--forest-600)]"
+                              : "border-[var(--stone-300)]"
+                          }`}
+                        >
+                          {isSelected && (
+                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                        <span className="font-medium text-[var(--stone-800)]">
                           {user.first_name} {user.last_name}
-                        </option>
-                      ))}
-                  </select>
-                </div>
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
               )}
             </div>
 
-            <div className="flex gap-3 mt-6">
+            {selectedUserIds.length > 0 && (
+              <div className="mb-4 p-3 rounded-lg bg-[var(--cream-100)]">
+                <span className="text-sm text-[var(--stone-600)]">
+                  {language === "de"
+                    ? `${selectedUserIds.length} Spieler ausgewählt`
+                    : `${selectedUserIds.length} player${selectedUserIds.length > 1 ? 's' : ''} selected`}
+                </span>
+              </div>
+            )}
+
+            <div className="flex gap-3">
               <button
-                onClick={() => setShowAddParticipant(false)}
+                onClick={() => {
+                  setShowAddParticipant(false);
+                  setSelectedUserIds([]);
+                }}
                 className="flex-1 btn-secondary"
               >
                 {t.booking.cancelDialog}
               </button>
               <button
-                onClick={handleAddParticipant}
-                disabled={!selectedUserId || (tournament?.type === "doubles" && !selectedPartnerId) || actionLoading === "add-participant"}
+                onClick={handleAddParticipants}
+                disabled={selectedUserIds.length === 0 || actionLoading === "add-participant"}
                 className="flex-1 btn-primary disabled:opacity-50"
               >
-                {actionLoading === "add-participant" ? "..." : language === "de" ? "Hinzufügen" : "Add"}
+                {actionLoading === "add-participant"
+                  ? "..."
+                  : language === "de"
+                  ? `${selectedUserIds.length > 0 ? selectedUserIds.length + ' ' : ''}Hinzufügen`
+                  : `Add${selectedUserIds.length > 0 ? ' ' + selectedUserIds.length : ''}`}
               </button>
             </div>
           </div>
