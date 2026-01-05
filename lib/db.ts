@@ -73,73 +73,60 @@ export async function getBookingsForDateRange(
   startDate: string,
   endDate: string
 ): Promise<Booking[]> {
-  // First try simple query to debug
-  const { data: simpleData, error: simpleError } = await supabase
+  // Get bookings
+  const { data: bookings, error } = await supabase
     .from("bookings")
     .select("*")
-    .gte("date", startDate)
-    .lte("date", endDate);
-
-  console.log("Simple bookings query:", { count: simpleData?.length, error: simpleError });
-
-  const { data, error } = await supabase
-    .from("bookings")
-    .select(`
-      *,
-      profiles!bookings_user_id_fkey(first_name, last_name),
-      partner:profiles!bookings_partner_id_fkey(first_name, last_name)
-    `)
     .gte("date", startDate)
     .lte("date", endDate)
     .order("date")
     .order("hour");
 
-  if (error) {
-    console.error("Error fetching bookings with joins:", error);
-    // Fall back to simple data without profile names
-    if (simpleData) {
-      return simpleData.map((booking) => ({
-        id: booking.id,
-        user_id: booking.user_id,
-        partner_id: booking.partner_id,
-        date: booking.date,
-        hour: booking.hour,
-        created_at: booking.created_at,
-        first_name: "User",
-        last_name: "",
-        partner_first_name: undefined,
-        partner_last_name: undefined,
-      }));
-    }
+  if (error || !bookings) {
+    console.error("Error fetching bookings:", error);
     return [];
   }
 
-  return data.map((booking) => ({
-    id: booking.id,
-    user_id: booking.user_id,
-    partner_id: booking.partner_id,
-    date: booking.date,
-    hour: booking.hour,
-    created_at: booking.created_at,
-    first_name: booking.profiles?.first_name || "User",
-    last_name: booking.profiles?.last_name || "",
-    partner_first_name: booking.partner?.first_name,
-    partner_last_name: booking.partner?.last_name,
-  }));
+  // Get all profiles to map names
+  const { data: profiles } = await supabase.from("profiles").select("id, first_name, last_name");
+  const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
+  return bookings.map((booking) => {
+    const user = profileMap.get(booking.user_id);
+    const partner = booking.partner_id ? profileMap.get(booking.partner_id) : null;
+    return {
+      id: booking.id,
+      user_id: booking.user_id,
+      partner_id: booking.partner_id,
+      date: booking.date,
+      hour: booking.hour,
+      created_at: booking.created_at,
+      first_name: user?.first_name || "User",
+      last_name: user?.last_name || "",
+      partner_first_name: partner?.first_name,
+      partner_last_name: partner?.last_name,
+    };
+  });
 }
 
 export async function getBookingById(id: number): Promise<Booking | null> {
   const { data, error } = await supabase
     .from("bookings")
-    .select(`
-      *,
-      profiles!bookings_user_id_fkey(first_name, last_name),
-      partner:profiles!bookings_partner_id_fkey(first_name, last_name)
-    `)
+    .select("*")
     .eq("id", id)
     .single();
 
   if (error || !data) return null;
+
+  // Get profile names
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, first_name, last_name")
+    .in("id", [data.user_id, data.partner_id].filter(Boolean));
+
+  const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+  const user = profileMap.get(data.user_id);
+  const partner = data.partner_id ? profileMap.get(data.partner_id) : null;
 
   return {
     id: data.id,
@@ -148,10 +135,10 @@ export async function getBookingById(id: number): Promise<Booking | null> {
     date: data.date,
     hour: data.hour,
     created_at: data.created_at,
-    first_name: data.profiles?.first_name,
-    last_name: data.profiles?.last_name,
-    partner_first_name: data.partner?.first_name,
-    partner_last_name: data.partner?.last_name,
+    first_name: user?.first_name,
+    last_name: user?.last_name,
+    partner_first_name: partner?.first_name,
+    partner_last_name: partner?.last_name,
   };
 }
 
