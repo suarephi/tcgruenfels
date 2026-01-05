@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
   const isTournamentPlayer = activeTournaments.length > 0;
 
   try {
-    const { date, hour, partnerId, partnerIds, bookTwoHours, bookForUserId } = await request.json();
+    const { date, hour, partnerId, partnerIds, bookTwoHours, bookForUserId, notes } = await request.json();
 
     // Allow admin to book on behalf of another user
     let userId = user.id;
@@ -165,11 +165,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the first booking
-    const bookingId = await createBooking(userId, date, hour, effectivePartnerId);
+    const bookingId = await createBooking(userId, date, hour, effectivePartnerId, notes || null);
 
     // For 2-hour bookings, create the second booking
     if (bookTwoHours) {
-      await createBooking(userId, date, hour + 1, effectivePartnerId);
+      await createBooking(userId, date, hour + 1, effectivePartnerId, notes || null);
     }
 
     return NextResponse.json({ id: bookingId }, { status: 201 });

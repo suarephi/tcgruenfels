@@ -187,6 +187,7 @@ h1, h2, h3 {
   background: white;
   border: 1.5px solid var(--stone-200);
   border-radius: 10px;
+  font-family: 'Outfit', -apple-system, sans-serif;
   font-size: 0.9375rem;
   font-weight: 500;
   color: var(--stone-700);
@@ -222,6 +223,7 @@ h1, h2, h3 {
   padding: 0.75rem;
   background: white;
   color: var(--stone-700);
+  font-family: 'Outfit', -apple-system, sans-serif;
 }
 
 .select-field option:checked {

@@ -15,6 +15,8 @@ interface User {
 interface TournamentMatchContext {
   tournamentId: string;
   matchId: string;
+  tournamentName: string;
+  roundName: string;
   matchInfo: string;
 }
 
@@ -33,10 +35,18 @@ function BookPageContent() {
     // Check for tournament match context in URL
     const tournamentId = searchParams.get("tournamentId");
     const matchId = searchParams.get("matchId");
+    const tournamentName = searchParams.get("tournamentName");
+    const roundName = searchParams.get("roundName");
     const matchInfo = searchParams.get("matchInfo");
 
     if (tournamentId && matchId && matchInfo) {
-      setTournamentMatch({ tournamentId, matchId, matchInfo });
+      setTournamentMatch({
+        tournamentId,
+        matchId,
+        tournamentName: tournamentName || "",
+        roundName: roundName || "",
+        matchInfo,
+      });
     }
   }, [searchParams]);
 

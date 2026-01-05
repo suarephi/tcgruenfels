@@ -14,6 +14,7 @@ export interface Booking {
   partner_id: string | null;
   date: string;
   hour: number;
+  notes: string | null;
   created_at: string;
   first_name?: string;
   last_name?: string;
@@ -100,6 +101,7 @@ export async function getBookingsForDateRange(
       partner_id: booking.partner_id,
       date: booking.date,
       hour: booking.hour,
+      notes: booking.notes || null,
       created_at: booking.created_at,
       first_name: user?.first_name || "User",
       last_name: user?.last_name || "",
@@ -134,6 +136,7 @@ export async function getBookingById(id: number): Promise<Booking | null> {
     partner_id: data.partner_id,
     date: data.date,
     hour: data.hour,
+    notes: data.notes || null,
     created_at: data.created_at,
     first_name: user?.first_name,
     last_name: user?.last_name,
@@ -175,11 +178,12 @@ export async function createBooking(
   userId: string,
   date: string,
   hour: number,
-  partnerId: string | null = null
+  partnerId: string | null = null,
+  notes: string | null = null
 ): Promise<number> {
   const { data, error } = await supabase
     .from("bookings")
-    .insert({ user_id: userId, date, hour, partner_id: partnerId })
+    .insert({ user_id: userId, date, hour, partner_id: partnerId, notes })
     .select("id")
     .single();
 

@@ -372,13 +372,32 @@ export default function TournamentDetailPage() {
     }
   };
 
+  const getRoundName = (match: Match): string => {
+    if (match.stage === "group") {
+      return language === "de"
+        ? `Gruppe ${match.group_number} - Runde ${match.round}`
+        : `Group ${match.group_number} - Round ${match.round}`;
+    }
+    // For knockout stages
+    const totalKnockoutRounds = Math.max(...matches.filter(m => m.stage === "knockout").map(m => m.round));
+    const roundFromEnd = totalKnockoutRounds - match.round + 1;
+
+    if (roundFromEnd === 1) return language === "de" ? "Finale" : "Final";
+    if (roundFromEnd === 2) return language === "de" ? "Halbfinale" : "Semifinal";
+    if (roundFromEnd === 3) return language === "de" ? "Viertelfinale" : "Quarterfinal";
+    return language === "de" ? `Runde ${match.round}` : `Round ${match.round}`;
+  };
+
   const openScheduleDialog = (match: Match) => {
     // Navigate to booking page with tournament match context
     const p1Name = getParticipantName(match.participant1);
     const p2Name = getParticipantName(match.participant2);
+    const roundName = getRoundName(match);
     const params = new URLSearchParams({
       tournamentId,
       matchId: match.id,
+      tournamentName: tournament?.name || "",
+      roundName,
       matchInfo: `${p1Name} vs ${p2Name}`,
     });
     router.push(`/book?${params.toString()}`);

@@ -11,6 +11,7 @@ interface Booking {
   user_id: string;
   date: string;
   hour: number;
+  notes?: string | null;
   first_name: string;
   last_name: string;
   partner_id?: string | null;
@@ -49,6 +50,8 @@ interface ToastState {
 interface TournamentMatchContext {
   tournamentId: string;
   matchId: string;
+  tournamentName: string;
+  roundName: string;
   matchInfo: string;
 }
 
@@ -177,8 +180,11 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
     setActionLoading(key);
 
     try {
-      // For tournament matches, book 2 hours
+      // For tournament matches, book 2 hours and add notes
       const bookTwoHours = !!tournamentMatch;
+      const notes = tournamentMatch
+        ? `${tournamentMatch.tournamentName} - ${tournamentMatch.roundName}: ${tournamentMatch.matchInfo}`
+        : null;
 
       const res = await fetch("/api/bookings", {
         method: "POST",
@@ -189,6 +195,7 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
           partnerIds,
           bookForUserId: viewAsUserId,
           bookTwoHours,
+          notes,
         }),
       });
 
@@ -422,16 +429,24 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
                       isMyBooking ? "slot-mine" : "slot-booked"
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${isMyBooking ? "bg-white/80" : "bg-[var(--stone-400)]"}`} />
-                      <span className={`font-medium text-sm ${isMyBooking ? "text-white" : "text-[var(--stone-600)]"}`}>
-                        {isMyBooking ? t.booking.yourBooking : `${t.booking.bookedBy} ${booking.first_name} ${booking.last_name}`}
-                        {booking.partner_first_name && (
-                          <span className={`font-normal ${isMyBooking ? "text-white/70" : "text-[var(--stone-400)]"}`}>
-                            {" "}{t.booking.with} {booking.partner_first_name} {booking.partner_last_name}
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isMyBooking ? "bg-white/80" : "bg-[var(--stone-400)]"}`} />
+                      <div className="min-w-0">
+                        {booking.notes ? (
+                          <span className={`font-medium text-sm truncate block ${isMyBooking ? "text-white" : "text-[var(--stone-600)]"}`}>
+                            {booking.notes}
+                          </span>
+                        ) : (
+                          <span className={`font-medium text-sm ${isMyBooking ? "text-white" : "text-[var(--stone-600)]"}`}>
+                            {isMyBooking ? t.booking.yourBooking : `${t.booking.bookedBy} ${booking.first_name} ${booking.last_name}`}
+                            {booking.partner_first_name && (
+                              <span className={`font-normal ${isMyBooking ? "text-white/70" : "text-[var(--stone-400)]"}`}>
+                                {" "}{t.booking.with} {booking.partner_first_name} {booking.partner_last_name}
+                              </span>
+                            )}
                           </span>
                         )}
-                      </span>
+                      </div>
                     </div>
                     {(isMyBooking || isActuallyMyBooking || data?.isAdmin) && canBookSelectedDate && (
                       <div className="flex items-center gap-1">
@@ -556,11 +571,17 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
                       {booking ? (
                         <div className={`rounded-lg p-3 text-sm ${isMyBooking ? "slot-mine" : "slot-booked"}`}>
                           <div className={`font-medium ${isMyBooking ? "text-white" : "text-[var(--stone-600)]"}`}>
-                            {isMyBooking ? t.booking.yourBooking : `${t.booking.bookedBy} ${booking.first_name} ${booking.last_name}`}
-                            {booking.partner_first_name && (
-                              <span className={`text-xs block mt-0.5 font-normal ${isMyBooking ? "text-white/70" : "text-[var(--stone-400)]"}`}>
-                                {t.booking.with} {booking.partner_first_name} {booking.partner_last_name}
-                              </span>
+                            {booking.notes ? (
+                              <span className="line-clamp-2">{booking.notes}</span>
+                            ) : (
+                              <>
+                                {isMyBooking ? t.booking.yourBooking : `${t.booking.bookedBy} ${booking.first_name} ${booking.last_name}`}
+                                {booking.partner_first_name && (
+                                  <span className={`text-xs block mt-0.5 font-normal ${isMyBooking ? "text-white/70" : "text-[var(--stone-400)]"}`}>
+                                    {t.booking.with} {booking.partner_first_name} {booking.partner_last_name}
+                                  </span>
+                                )}
+                              </>
                             )}
                           </div>
                           {(isMyBooking || isActuallyMyBooking || data?.isAdmin) && canBook && (
