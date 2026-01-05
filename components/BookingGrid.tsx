@@ -388,7 +388,7 @@ export default function BookingGrid() {
                         {isMyBooking ? t.booking.yourBooking : `${t.booking.bookedBy} ${booking.first_name} ${booking.last_name}`}
                         {booking.partner_first_name && (
                           <span className={`font-normal ${isMyBooking ? "text-white/70" : "text-[var(--stone-400)]"}`}>
-                            {" "}{t.booking.with} {booking.partner_first_name}
+                            {" "}{t.booking.with} {booking.partner_first_name} {booking.partner_last_name}
                           </span>
                         )}
                       </span>
@@ -515,10 +515,10 @@ export default function BookingGrid() {
                       {booking ? (
                         <div className={`rounded-lg p-3 text-sm ${isMyBooking ? "slot-mine" : "slot-booked"}`}>
                           <div className={`font-medium ${isMyBooking ? "text-white" : "text-[var(--stone-600)]"}`}>
-                            {isMyBooking ? t.booking.yourBooking : `${t.booking.bookedBy} ${booking.first_name}`}
+                            {isMyBooking ? t.booking.yourBooking : `${t.booking.bookedBy} ${booking.first_name} ${booking.last_name}`}
                             {booking.partner_first_name && (
                               <span className={`text-xs block mt-0.5 font-normal ${isMyBooking ? "text-white/70" : "text-[var(--stone-400)]"}`}>
-                                {t.booking.with} {booking.partner_first_name}
+                                {t.booking.with} {booking.partner_first_name} {booking.partner_last_name}
                               </span>
                             )}
                           </div>
