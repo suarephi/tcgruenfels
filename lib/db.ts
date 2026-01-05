@@ -73,6 +73,15 @@ export async function getBookingsForDateRange(
   startDate: string,
   endDate: string
 ): Promise<Booking[]> {
+  // First try simple query to debug
+  const { data: simpleData, error: simpleError } = await supabase
+    .from("bookings")
+    .select("*")
+    .gte("date", startDate)
+    .lte("date", endDate);
+
+  console.log("Simple bookings query:", { count: simpleData?.length, error: simpleError });
+
   const { data, error } = await supabase
     .from("bookings")
     .select(`
@@ -86,7 +95,22 @@ export async function getBookingsForDateRange(
     .order("hour");
 
   if (error) {
-    console.error("Error fetching bookings:", error);
+    console.error("Error fetching bookings with joins:", error);
+    // Fall back to simple data without profile names
+    if (simpleData) {
+      return simpleData.map((booking) => ({
+        id: booking.id,
+        user_id: booking.user_id,
+        partner_id: booking.partner_id,
+        date: booking.date,
+        hour: booking.hour,
+        created_at: booking.created_at,
+        first_name: "User",
+        last_name: "",
+        partner_first_name: undefined,
+        partner_last_name: undefined,
+      }));
+    }
     return [];
   }
 
@@ -97,8 +121,8 @@ export async function getBookingsForDateRange(
     date: booking.date,
     hour: booking.hour,
     created_at: booking.created_at,
-    first_name: booking.profiles?.first_name,
-    last_name: booking.profiles?.last_name,
+    first_name: booking.profiles?.first_name || "User",
+    last_name: booking.profiles?.last_name || "",
     partner_first_name: booking.partner?.first_name,
     partner_last_name: booking.partner?.last_name,
   }));

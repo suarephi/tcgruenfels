@@ -43,32 +43,32 @@ export default function MyBookingsPage() {
     const todayDate = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Zurich" });
     console.log("Filtering bookings from date:", todayDate, "for user:", user.id);
 
+    // First, try a simple query without joins to see if basic access works
     const { data, error } = await supabase
       .from("bookings")
-      .select(`
-        id,
-        date,
-        hour,
-        partner_id,
-        partner:profiles!bookings_partner_id_fkey(first_name, last_name)
-      `)
+      .select("*")
       .eq("user_id", user.id)
       .order("date", { ascending: true })
       .order("hour", { ascending: true });
+
+    console.log("My bookings query result:", { data, error });
 
     if (error) {
       console.error("Error fetching my bookings:", error);
     }
 
-    if (data) {
+    if (data && data.length > 0) {
+      // Now fetch partner names separately if needed
       setBookings(data.map((b: any) => ({
         id: b.id,
         date: b.date,
         hour: b.hour,
         partner_id: b.partner_id,
-        partner_first_name: b.partner?.first_name,
-        partner_last_name: b.partner?.last_name,
+        partner_first_name: undefined,
+        partner_last_name: undefined,
       })));
+    } else {
+      console.log("No bookings found for user:", user.id);
     }
     setLoading(false);
   }, [supabase, router]);
