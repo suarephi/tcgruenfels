@@ -166,155 +166,155 @@ export default function ManualBracketEditor({
           </p>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Unassigned Participants */}
-            <div>
-              <h3 className="font-medium text-[var(--stone-800)] mb-3">
-                {language === "de" ? "Verfügbare Spieler" : "Available Players"}
-                <span className="text-sm text-[var(--stone-500)] ml-2">({unassigned.length})</span>
-              </h3>
-              <div className="space-y-2 min-h-[100px] p-3 rounded-xl border-2 border-dashed border-[var(--stone-200)] bg-[var(--cream-50)]">
-                {unassigned.length === 0 ? (
-                  <p className="text-sm text-[var(--stone-400)] text-center py-4">
-                    {language === "de" ? "Alle Spieler zugewiesen" : "All players assigned"}
-                  </p>
-                ) : (
-                  unassigned.map((p) => (
-                    <div
-                      key={p.id}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, p)}
-                      className="px-4 py-2 rounded-lg bg-white border border-[var(--stone-200)] cursor-grab active:cursor-grabbing hover:border-[var(--forest-400)] hover:shadow-sm transition-all"
-                    >
-                      <span className="font-medium text-[var(--stone-700)]">
-                        {getParticipantName(p)}
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
+        {/* Content - Two column layout with fixed left, scrollable right */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Left Panel - Fixed participants */}
+          <div className="w-72 flex-shrink-0 border-r border-[var(--stone-200)] p-4 overflow-y-auto bg-[var(--cream-50)]">
+            <h3 className="font-medium text-[var(--stone-800)] mb-3 sticky top-0 bg-[var(--cream-50)] py-1">
+              {language === "de" ? "Verfügbare Spieler" : "Available Players"}
+              <span className="text-sm text-[var(--stone-500)] ml-2">({unassigned.length})</span>
+            </h3>
 
-              {/* Bye marker */}
-              <div className="mt-4">
-                <h4 className="text-sm font-medium text-[var(--stone-600)] mb-2">
-                  {language === "de" ? "Freilos (Bye)" : "Bye"}
-                </h4>
-                <div
-                  draggable
-                  onDragStart={(e) => {
-                    e.dataTransfer.setData("participantId", "BYE");
-                    e.dataTransfer.effectAllowed = "move";
-                  }}
-                  className="px-4 py-2 rounded-lg border-2 border-dashed border-[var(--terracotta-300)] bg-[var(--terracotta-50)] cursor-grab active:cursor-grabbing text-center"
-                >
-                  <span className="text-sm text-[var(--terracotta-600)] font-medium">
-                    {language === "de" ? "Freilos zuweisen" : "Assign Bye"}
-                  </span>
-                </div>
-              </div>
+            <div className="space-y-2 mb-4">
+              {unassigned.length === 0 ? (
+                <p className="text-sm text-[var(--stone-400)] text-center py-4">
+                  {language === "de" ? "Alle Spieler zugewiesen" : "All players assigned"}
+                </p>
+              ) : (
+                unassigned.map((p) => (
+                  <div
+                    key={p.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, p)}
+                    className="px-3 py-2 rounded-lg bg-white border border-[var(--stone-200)] cursor-grab active:cursor-grabbing hover:border-[var(--forest-400)] hover:shadow-sm transition-all text-sm"
+                  >
+                    <span className="font-medium text-[var(--stone-700)]">
+                      {getParticipantName(p)}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
 
-              {/* Quick Actions */}
-              <div className="mt-4 flex gap-2">
-                <button
-                  onClick={autoAssign}
-                  disabled={unassigned.length === 0}
-                  className="flex-1 text-sm font-medium px-3 py-2 rounded-lg bg-[var(--forest-100)] text-[var(--forest-700)] hover:bg-[var(--forest-200)] disabled:opacity-50 transition-all"
-                >
-                  {language === "de" ? "Auto-Zuweisen" : "Auto-Assign"}
-                </button>
-                <button
-                  onClick={clearAll}
-                  className="flex-1 text-sm font-medium px-3 py-2 rounded-lg bg-[var(--stone-100)] text-[var(--stone-600)] hover:bg-[var(--stone-200)] transition-all"
-                >
-                  {language === "de" ? "Zurücksetzen" : "Clear All"}
-                </button>
+            {/* Bye marker */}
+            <div className="mb-4">
+              <h4 className="text-sm font-medium text-[var(--stone-600)] mb-2">
+                {language === "de" ? "Freilos (Bye)" : "Bye"}
+              </h4>
+              <div
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData("participantId", "BYE");
+                  e.dataTransfer.effectAllowed = "move";
+                }}
+                className="px-3 py-2 rounded-lg border-2 border-dashed border-[var(--terracotta-300)] bg-[var(--terracotta-50)] cursor-grab active:cursor-grabbing text-center"
+              >
+                <span className="text-sm text-[var(--terracotta-600)] font-medium">
+                  {language === "de" ? "Freilos" : "Bye"}
+                </span>
               </div>
             </div>
 
-            {/* Match Slots */}
-            <div>
-              <h3 className="font-medium text-[var(--stone-800)] mb-3">
-                {language === "de" ? "Spielpaarungen (Runde 1)" : "Match Pairings (Round 1)"}
-              </h3>
-              <div className="space-y-3">
-                {matches.map((match, index) => (
-                  <div
-                    key={index}
-                    className="p-3 rounded-xl border border-[var(--stone-200)] bg-white"
-                  >
-                    <div className="text-xs text-[var(--stone-500)] mb-2">
-                      {language === "de" ? `Spiel ${index + 1}` : `Match ${index + 1}`}
+            {/* Quick Actions */}
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={autoAssign}
+                disabled={unassigned.length === 0}
+                className="w-full text-sm font-medium px-3 py-2 rounded-lg bg-[var(--forest-100)] text-[var(--forest-700)] hover:bg-[var(--forest-200)] disabled:opacity-50 transition-all"
+              >
+                {language === "de" ? "Auto-Zuweisen" : "Auto-Assign"}
+              </button>
+              <button
+                onClick={clearAll}
+                className="w-full text-sm font-medium px-3 py-2 rounded-lg bg-[var(--stone-100)] text-[var(--stone-600)] hover:bg-[var(--stone-200)] transition-all"
+              >
+                {language === "de" ? "Zurücksetzen" : "Clear All"}
+              </button>
+            </div>
+          </div>
+
+          {/* Right Panel - Scrollable match slots */}
+          <div className="flex-1 p-4 overflow-y-auto">
+            <h3 className="font-medium text-[var(--stone-800)] mb-3">
+              {language === "de" ? "Spielpaarungen (Runde 1)" : "Match Pairings (Round 1)"}
+              <span className="text-sm text-[var(--stone-500)] ml-2">({matches.length} {language === "de" ? "Spiele" : "matches"})</span>
+            </h3>
+            <div className="space-y-3">
+              {matches.map((match, index) => (
+                <div
+                  key={index}
+                  className="p-3 rounded-xl border border-[var(--stone-200)] bg-white"
+                >
+                  <div className="text-xs text-[var(--stone-500)] mb-2">
+                    {language === "de" ? `Spiel ${index + 1}` : `Match ${index + 1}`}
+                  </div>
+                  <div className="space-y-2">
+                    {/* Slot 1 */}
+                    <div
+                      onDrop={(e) => handleDrop(e, index, "participant1")}
+                      onDragOver={handleDragOver}
+                      className={`px-3 py-2 rounded-lg min-h-[40px] flex items-center justify-between transition-all ${
+                        match.participant1
+                          ? "bg-[var(--forest-50)] border border-[var(--forest-200)]"
+                          : "border-2 border-dashed border-[var(--stone-200)] bg-[var(--cream-50)]"
+                      }`}
+                    >
+                      {match.participant1 ? (
+                        <>
+                          <span className="font-medium text-[var(--stone-700)] text-sm">
+                            {getParticipantName(match.participant1)}
+                          </span>
+                          <button
+                            onClick={() => removeFromSlot(index, "participant1")}
+                            className="text-[var(--stone-400)] hover:text-[var(--terracotta-500)]"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </>
+                      ) : (
+                        <span className="text-sm text-[var(--stone-400)]">
+                          {language === "de" ? "Spieler hierher ziehen" : "Drop player here"}
+                        </span>
+                      )}
                     </div>
-                    <div className="space-y-2">
-                      {/* Slot 1 */}
-                      <div
-                        onDrop={(e) => handleDrop(e, index, "participant1")}
-                        onDragOver={handleDragOver}
-                        className={`px-3 py-2 rounded-lg min-h-[40px] flex items-center justify-between transition-all ${
-                          match.participant1
-                            ? "bg-[var(--forest-50)] border border-[var(--forest-200)]"
-                            : "border-2 border-dashed border-[var(--stone-200)] bg-[var(--cream-50)]"
-                        }`}
-                      >
-                        {match.participant1 ? (
-                          <>
-                            <span className="font-medium text-[var(--stone-700)]">
-                              {getParticipantName(match.participant1)}
-                            </span>
-                            <button
-                              onClick={() => removeFromSlot(index, "participant1")}
-                              className="text-[var(--stone-400)] hover:text-[var(--terracotta-500)]"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          </>
-                        ) : (
-                          <span className="text-sm text-[var(--stone-400)]">
-                            {language === "de" ? "Spieler oder Freilos hierher ziehen" : "Drop player or bye here"}
-                          </span>
-                        )}
-                      </div>
 
-                      <div className="text-center text-xs text-[var(--stone-400)]">vs</div>
+                    <div className="text-center text-xs text-[var(--stone-400)]">vs</div>
 
-                      {/* Slot 2 */}
-                      <div
-                        onDrop={(e) => handleDrop(e, index, "participant2")}
-                        onDragOver={handleDragOver}
-                        className={`px-3 py-2 rounded-lg min-h-[40px] flex items-center justify-between transition-all ${
-                          match.participant2
-                            ? "bg-[var(--forest-50)] border border-[var(--forest-200)]"
-                            : "border-2 border-dashed border-[var(--stone-200)] bg-[var(--cream-50)]"
-                        }`}
-                      >
-                        {match.participant2 ? (
-                          <>
-                            <span className="font-medium text-[var(--stone-700)]">
-                              {getParticipantName(match.participant2)}
-                            </span>
-                            <button
-                              onClick={() => removeFromSlot(index, "participant2")}
-                              className="text-[var(--stone-400)] hover:text-[var(--terracotta-500)]"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          </>
-                        ) : (
-                          <span className="text-sm text-[var(--stone-400)]">
-                            {language === "de" ? "Spieler oder Freilos hierher ziehen" : "Drop player or bye here"}
+                    {/* Slot 2 */}
+                    <div
+                      onDrop={(e) => handleDrop(e, index, "participant2")}
+                      onDragOver={handleDragOver}
+                      className={`px-3 py-2 rounded-lg min-h-[40px] flex items-center justify-between transition-all ${
+                        match.participant2
+                          ? "bg-[var(--forest-50)] border border-[var(--forest-200)]"
+                          : "border-2 border-dashed border-[var(--stone-200)] bg-[var(--cream-50)]"
+                      }`}
+                    >
+                      {match.participant2 ? (
+                        <>
+                          <span className="font-medium text-[var(--stone-700)] text-sm">
+                            {getParticipantName(match.participant2)}
                           </span>
-                        )}
-                      </div>
+                          <button
+                            onClick={() => removeFromSlot(index, "participant2")}
+                            className="text-[var(--stone-400)] hover:text-[var(--terracotta-500)]"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </>
+                      ) : (
+                        <span className="text-sm text-[var(--stone-400)]">
+                          {language === "de" ? "Spieler hierher ziehen" : "Drop player here"}
+                        </span>
+                      )}
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

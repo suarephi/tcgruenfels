@@ -280,6 +280,37 @@ export default function TournamentDetailPage() {
     }
   };
 
+  const handleResetBracket = async () => {
+    if (!confirm(language === "de"
+      ? "Spielplan wirklich zurücksetzen? Alle bisherigen Ergebnisse gehen verloren."
+      : "Really reset bracket? All existing results will be lost.")) {
+      return;
+    }
+
+    setActionLoading("reset-bracket");
+    try {
+      const res = await fetch(`/api/tournaments/${tournamentId}/matches`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        setToast({ message: language === "de" ? "Spielplan zurückgesetzt" : "Bracket reset", type: "success" });
+        await fetchTournament();
+        // Reopen bracket editor for single elimination
+        if (tournament?.format === "single_elimination") {
+          setShowBracketEditor(true);
+        }
+      } else {
+        const data = await res.json();
+        setToast({ message: data.error || t.toast.somethingWrong, type: "error" });
+      }
+    } catch {
+      setToast({ message: t.toast.somethingWrong, type: "error" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const handleUpdateStatus = async (newStatus: string) => {
     setActionLoading("update-status");
     try {
@@ -742,6 +773,22 @@ export default function TournamentDetailPage() {
                 {actionLoading === "generate-matches"
                   ? "..."
                   : language === "de" ? "Spielplan erstellen" : "Generate Matches"}
+              </button>
+            )}
+
+            {/* Edit/Reset bracket button - show when matches exist and tournament not started */}
+            {matches.length > 0 && tournament.status === "draft" && (
+              <button
+                onClick={handleResetBracket}
+                disabled={actionLoading === "reset-bracket"}
+                className="btn-secondary flex items-center gap-2 disabled:opacity-50"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                {actionLoading === "reset-bracket"
+                  ? "..."
+                  : language === "de" ? "Spielplan bearbeiten" : "Edit Bracket"}
               </button>
             )}
 
