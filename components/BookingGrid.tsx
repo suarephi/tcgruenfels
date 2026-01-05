@@ -430,23 +430,36 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
                     }`}
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isMyBooking ? "bg-white/80" : "bg-[var(--stone-400)]"}`} />
-                      <div className="min-w-0">
-                        {booking.notes ? (
-                          <span className={`font-medium text-sm truncate block ${isMyBooking ? "text-white" : "text-[var(--stone-600)]"}`}>
-                            {booking.notes}
-                          </span>
-                        ) : (
+                      {booking.notes ? (
+                        /* Tournament booking - compact display */
+                        <div className="flex items-center gap-2 group relative">
+                          <svg className={`w-4 h-4 flex-shrink-0 ${isMyBooking ? "text-white/80" : "text-[var(--terracotta-500)]"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                          </svg>
                           <span className={`font-medium text-sm ${isMyBooking ? "text-white" : "text-[var(--stone-600)]"}`}>
-                            {isMyBooking ? t.booking.yourBooking : `${t.booking.bookedBy} ${booking.first_name} ${booking.last_name}`}
+                            {booking.first_name} {booking.last_name}
+                          </span>
+                          {/* Tooltip on hover */}
+                          <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-10">
+                            <div className="bg-[var(--stone-800)] text-white text-xs px-3 py-2 rounded-lg shadow-lg whitespace-nowrap max-w-[250px]">
+                              <div className="font-medium truncate">{booking.notes}</div>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Regular booking */
+                        <>
+                          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isMyBooking ? "bg-white/80" : "bg-[var(--stone-400)]"}`} />
+                          <span className={`font-medium text-sm ${isMyBooking ? "text-white" : "text-[var(--stone-600)]"}`}>
+                            {isMyBooking ? t.booking.yourBooking : `${booking.first_name} ${booking.last_name}`}
                             {booking.partner_first_name && (
                               <span className={`font-normal ${isMyBooking ? "text-white/70" : "text-[var(--stone-400)]"}`}>
-                                {" "}{t.booking.with} {booking.partner_first_name} {booking.partner_last_name}
+                                {" "}+ {booking.partner_first_name}
                               </span>
                             )}
                           </span>
-                        )}
-                      </div>
+                        </>
+                      )}
                     </div>
                     {(isMyBooking || isActuallyMyBooking || data?.isAdmin) && canBookSelectedDate && (
                       <div className="flex items-center gap-1">
@@ -569,21 +582,35 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
                       }`}
                     >
                       {booking ? (
-                        <div className={`rounded-lg p-3 text-sm ${isMyBooking ? "slot-mine" : "slot-booked"}`}>
+                        <div className={`rounded-lg p-2 text-sm ${isMyBooking ? "slot-mine" : "slot-booked"} group relative`}>
                           <div className={`font-medium ${isMyBooking ? "text-white" : "text-[var(--stone-600)]"}`}>
                             {booking.notes ? (
-                              <span className="line-clamp-2">{booking.notes}</span>
+                              /* Tournament booking - compact with icon */
+                              <div className="flex items-center gap-1.5">
+                                <svg className={`w-3.5 h-3.5 flex-shrink-0 ${isMyBooking ? "text-white/80" : "text-[var(--terracotta-500)]"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                </svg>
+                                <span className="truncate">{booking.first_name}</span>
+                              </div>
                             ) : (
                               <>
-                                {isMyBooking ? t.booking.yourBooking : `${t.booking.bookedBy} ${booking.first_name} ${booking.last_name}`}
+                                <div className="truncate">{isMyBooking ? t.booking.yourBooking : `${booking.first_name}`}</div>
                                 {booking.partner_first_name && (
-                                  <span className={`text-xs block mt-0.5 font-normal ${isMyBooking ? "text-white/70" : "text-[var(--stone-400)]"}`}>
-                                    {t.booking.with} {booking.partner_first_name} {booking.partner_last_name}
+                                  <span className={`text-xs block truncate font-normal ${isMyBooking ? "text-white/70" : "text-[var(--stone-400)]"}`}>
+                                    + {booking.partner_first_name}
                                   </span>
                                 )}
                               </>
                             )}
                           </div>
+                          {/* Tooltip for tournament details */}
+                          {booking.notes && (
+                            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block z-20 pointer-events-none">
+                              <div className="bg-[var(--stone-800)] text-white text-xs px-3 py-2 rounded-lg shadow-lg whitespace-nowrap">
+                                <div className="font-medium">{booking.notes}</div>
+                              </div>
+                            </div>
+                          )}
                           {(isMyBooking || isActuallyMyBooking || data?.isAdmin) && canBook && (
                             <div className="mt-2 flex items-center gap-1">
                               {(isMyBooking || isActuallyMyBooking) && (
