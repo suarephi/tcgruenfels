@@ -78,23 +78,11 @@ export default function Navbar() {
           {/* Logo */}
           <Link href="/book" className="flex items-center gap-3 group">
             <div className="relative">
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105"
-                style={{
-                  background: 'linear-gradient(135deg, var(--forest-600) 0%, var(--forest-700) 100%)',
-                  boxShadow: '0 2px 8px rgba(45, 74, 56, 0.25)',
-                }}
-              >
-                {/* Tennis racket icon */}
-                <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <ellipse cx="10" cy="8" rx="6" ry="7" />
-                  <line x1="10" y1="1" x2="10" y2="15" />
-                  <line x1="4" y1="8" x2="16" y2="8" />
-                  <line x1="5.5" y1="4" x2="14.5" y2="12" />
-                  <line x1="5.5" y1="12" x2="14.5" y2="4" />
-                  <line x1="10" y1="15" x2="18" y2="23" strokeWidth="2.5" strokeLinecap="round" />
-                </svg>
-              </div>
+              <img
+                src="https://static.wixstatic.com/media/4a3b62_9c37ebacfa734ca9a8c3f2f66666b015~mv2.png/v1/fill/w_168,h_128,al_c,lg_1,q_85,enc_avif,quality_auto/4a3b62_9c37ebacfa734ca9a8c3f2f66666b015~mv2.png"
+                alt="TC Grünfels"
+                className="h-10 w-auto transition-transform group-hover:scale-105"
+              />
             </div>
             <div className="hidden sm:block">
               <span className="font-serif text-xl text-[var(--stone-900)] tracking-tight">

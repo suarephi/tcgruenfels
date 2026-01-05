@@ -54,6 +54,12 @@ interface Match {
   participant2?: Participant;
 }
 
+interface User {
+  id: string;
+  first_name: string;
+  last_name: string;
+}
+
 type Tab = "bracket" | "matches" | "standings" | "participants";
 
 export default function TournamentDetailPage() {
@@ -75,6 +81,13 @@ export default function TournamentDetailPage() {
     match: null,
   });
 
+  // Admin controls state
+  const [showAddParticipant, setShowAddParticipant] = useState(false);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [selectedPartnerId, setSelectedPartnerId] = useState<string>("");
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
   const tournamentId = params.id as string;
 
   const fetchTournament = useCallback(async () => {
@@ -95,6 +108,18 @@ export default function TournamentDetailPage() {
     }
   }, [tournamentId, router]);
 
+  const fetchAllUsers = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/users");
+      if (res.ok) {
+        const data = await res.json();
+        setAllUsers(data.users || []);
+      }
+    } catch {
+      // Ignore errors
+    }
+  }, []);
+
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -105,13 +130,117 @@ export default function TournamentDetailPage() {
           .select("is_admin")
           .eq("id", user.id)
           .single();
-        setIsAdmin(profile?.is_admin || false);
+        const admin = profile?.is_admin || false;
+        setIsAdmin(admin);
+        if (admin) {
+          fetchAllUsers();
+        }
       }
     };
 
     checkAuth();
     fetchTournament();
-  }, [fetchTournament, supabase]);
+  }, [fetchTournament, fetchAllUsers, supabase]);
+
+  const handleAddParticipant = async () => {
+    if (!selectedUserId) return;
+    setActionLoading("add-participant");
+    try {
+      const body: { userId: string; partnerId?: string } = { userId: selectedUserId };
+      if (tournament?.type === "doubles" && selectedPartnerId) {
+        body.partnerId = selectedPartnerId;
+      }
+
+      const res = await fetch(`/api/tournaments/${tournamentId}/participants`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (res.ok) {
+        setToast({ message: language === "de" ? "Teilnehmer hinzugefügt" : "Participant added", type: "success" });
+        setShowAddParticipant(false);
+        setSelectedUserId("");
+        setSelectedPartnerId("");
+        await fetchTournament();
+      } else {
+        const data = await res.json();
+        setToast({ message: data.error || t.toast.somethingWrong, type: "error" });
+      }
+    } catch {
+      setToast({ message: t.toast.somethingWrong, type: "error" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleRemoveParticipant = async (participantId: string) => {
+    setActionLoading(participantId);
+    try {
+      const res = await fetch(`/api/tournaments/${tournamentId}/participants?participantId=${participantId}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        setToast({ message: language === "de" ? "Teilnehmer entfernt" : "Participant removed", type: "success" });
+        await fetchTournament();
+      } else {
+        setToast({ message: t.toast.somethingWrong, type: "error" });
+      }
+    } catch {
+      setToast({ message: t.toast.somethingWrong, type: "error" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleGenerateMatches = async () => {
+    setActionLoading("generate-matches");
+    try {
+      const res = await fetch(`/api/tournaments/${tournamentId}/matches`, {
+        method: "POST",
+      });
+
+      if (res.ok) {
+        setToast({ message: language === "de" ? "Spielplan erstellt" : "Matches generated", type: "success" });
+        await fetchTournament();
+      } else {
+        const data = await res.json();
+        setToast({ message: data.error || t.toast.somethingWrong, type: "error" });
+      }
+    } catch {
+      setToast({ message: t.toast.somethingWrong, type: "error" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleUpdateStatus = async (newStatus: string) => {
+    setActionLoading("update-status");
+    try {
+      const res = await fetch(`/api/tournaments/${tournamentId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (res.ok) {
+        setToast({ message: language === "de" ? "Status aktualisiert" : "Status updated", type: "success" });
+        await fetchTournament();
+      } else {
+        setToast({ message: t.toast.somethingWrong, type: "error" });
+      }
+    } catch {
+      setToast({ message: t.toast.somethingWrong, type: "error" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Filter out users who are already participants
+  const availableUsers = allUsers.filter(
+    (user) => !participants.some((p) => p.user_id === user.id || p.partner_id === user.id)
+  );
 
   const getParticipantName = (participant?: Participant) => {
     if (!participant) return t.tournament.bye;
@@ -244,6 +373,79 @@ export default function TournamentDetailPage() {
         />
       )}
 
+      {/* Add Participant Modal */}
+      {showAddParticipant && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowAddParticipant(false)}
+          />
+          <div className="relative w-full max-w-md card-elevated p-6 animate-scale-in">
+            <h3 className="font-serif text-xl text-[var(--stone-900)] mb-4">
+              {language === "de" ? "Teilnehmer hinzufügen" : "Add Participant"}
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[var(--stone-700)] mb-1.5">
+                  {language === "de" ? "Spieler" : "Player"}
+                </label>
+                <select
+                  value={selectedUserId}
+                  onChange={(e) => setSelectedUserId(e.target.value)}
+                  className="input-field"
+                >
+                  <option value="">{language === "de" ? "Spieler auswählen..." : "Select player..."}</option>
+                  {availableUsers.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.first_name} {user.last_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {tournament?.type === "doubles" && (
+                <div>
+                  <label className="block text-sm font-medium text-[var(--stone-700)] mb-1.5">
+                    {language === "de" ? "Partner" : "Partner"}
+                  </label>
+                  <select
+                    value={selectedPartnerId}
+                    onChange={(e) => setSelectedPartnerId(e.target.value)}
+                    className="input-field"
+                  >
+                    <option value="">{language === "de" ? "Partner auswählen..." : "Select partner..."}</option>
+                    {availableUsers
+                      .filter((u) => u.id !== selectedUserId)
+                      .map((user) => (
+                        <option key={user.id} value={user.id}>
+                          {user.first_name} {user.last_name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowAddParticipant(false)}
+                className="flex-1 btn-secondary"
+              >
+                {t.booking.cancelDialog}
+              </button>
+              <button
+                onClick={handleAddParticipant}
+                disabled={!selectedUserId || (tournament?.type === "doubles" && !selectedPartnerId) || actionLoading === "add-participant"}
+                className="flex-1 btn-primary disabled:opacity-50"
+              >
+                {actionLoading === "add-participant" ? "..." : language === "de" ? "Hinzufügen" : "Add"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-8 animate-fade-in">
         <div className="flex items-start justify-between gap-4">
@@ -265,6 +467,62 @@ export default function TournamentDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* Admin Controls */}
+        {isAdmin && (
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              onClick={() => setShowAddParticipant(true)}
+              className="btn-secondary flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              {language === "de" ? "Teilnehmer hinzufügen" : "Add Participant"}
+            </button>
+
+            {participants.length >= 2 && matches.length === 0 && (
+              <button
+                onClick={handleGenerateMatches}
+                disabled={actionLoading === "generate-matches"}
+                className="btn-primary flex items-center gap-2 disabled:opacity-50"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+                </svg>
+                {actionLoading === "generate-matches"
+                  ? "..."
+                  : language === "de" ? "Spielplan erstellen" : "Generate Matches"}
+              </button>
+            )}
+
+            {tournament.status === "draft" && participants.length >= 2 && (
+              <button
+                onClick={() => handleUpdateStatus("in_progress")}
+                disabled={actionLoading === "update-status"}
+                className="px-4 py-2 rounded-lg font-medium text-white transition-all disabled:opacity-50"
+                style={{ background: "var(--forest-600)" }}
+              >
+                {actionLoading === "update-status"
+                  ? "..."
+                  : language === "de" ? "Turnier starten" : "Start Tournament"}
+              </button>
+            )}
+
+            {tournament.status === "in_progress" && (
+              <button
+                onClick={() => handleUpdateStatus("completed")}
+                disabled={actionLoading === "update-status"}
+                className="px-4 py-2 rounded-lg font-medium text-white transition-all disabled:opacity-50"
+                style={{ background: "var(--terracotta-500)" }}
+              >
+                {actionLoading === "update-status"
+                  ? "..."
+                  : language === "de" ? "Turnier beenden" : "End Tournament"}
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
@@ -439,11 +697,23 @@ export default function TournamentDetailPage() {
                       )}
                     </div>
                   </div>
-                  {participant.seed && (
-                    <span className="text-sm text-[var(--stone-500)]">
-                      {t.tournament.seed} #{participant.seed}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {participant.seed && (
+                      <span className="text-sm text-[var(--stone-500)]">
+                        {t.tournament.seed} #{participant.seed}
+                      </span>
+                    )}
+                    {isAdmin && matches.length === 0 && (
+                      <button
+                        onClick={() => handleRemoveParticipant(participant.id)}
+                        disabled={actionLoading === participant.id}
+                        className="text-sm font-medium px-3 py-1.5 rounded-lg transition-all disabled:opacity-50 hover:bg-red-50"
+                        style={{ color: "#dc2626" }}
+                      >
+                        {actionLoading === participant.id ? "..." : language === "de" ? "Entfernen" : "Remove"}
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))
             )}
