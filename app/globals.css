@@ -180,6 +180,64 @@ h1, h2, h3 {
   box-shadow: 0 0 0 3px rgba(74, 122, 92, 0.1);
 }
 
+/* Custom Select Dropdown */
+.select-field {
+  width: 100%;
+  padding: 0.75rem 2.5rem 0.75rem 1rem;
+  background: white;
+  border: 1.5px solid var(--stone-200);
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--stone-700);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%239c9c98' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1.25rem;
+}
+
+.select-field:hover {
+  border-color: var(--stone-300);
+  background-color: var(--cream-50);
+}
+
+.select-field:focus {
+  outline: none;
+  border-color: var(--forest-500);
+  box-shadow: 0 0 0 3px rgba(74, 122, 92, 0.1);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%233a5f48' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+}
+
+.select-field:disabled {
+  background-color: var(--stone-50);
+  color: var(--stone-400);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.select-field option {
+  padding: 0.75rem;
+  background: white;
+  color: var(--stone-700);
+}
+
+.select-field option:checked {
+  background: var(--forest-100);
+  color: var(--forest-700);
+}
+
+/* Small select variant */
+.select-field-sm {
+  padding: 0.5rem 2rem 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  border-radius: 8px;
+  background-position: right 0.5rem center;
+  background-size: 1rem;
+}
+
 /* Slot States */
 .slot-available {
   background: linear-gradient(180deg, var(--forest-50) 0%, var(--forest-100) 100%);

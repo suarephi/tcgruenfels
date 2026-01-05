@@ -177,7 +177,7 @@ export default function BookingDialog({
               </label>
               <div className="space-y-2">
                 {[0, 1, 2].map((index) => (
-                  <div key={index} className="relative">
+                  <div key={index}>
                     <select
                       value={selectedPartners[index] || ""}
                       onChange={(e) => {
@@ -190,7 +190,7 @@ export default function BookingDialog({
                         setSelectedPartners(newPartners.filter(Boolean));
                       }}
                       disabled={loadingUsers || (index > 0 && !selectedPartners[index - 1])}
-                      className="input-field appearance-none pr-10 cursor-pointer disabled:opacity-50"
+                      className="select-field"
                     >
                       <option value="">
                         {index === 0 ? t.booking.noPartner : (language === "de" ? "Kein weiterer Spieler" : "No additional player")}
@@ -203,11 +203,6 @@ export default function BookingDialog({
                           </option>
                         ))}
                     </select>
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                      <svg className="w-5 h-5 text-[var(--stone-400)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
                   </div>
                 ))}
               </div>

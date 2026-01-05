@@ -184,7 +184,7 @@ function BookPageContent() {
               <select
                 value={viewAsUserId || ""}
                 onChange={(e) => setViewAsUserId(e.target.value || null)}
-                className="input-field py-1.5 text-sm min-w-[180px]"
+                className="select-field select-field-sm min-w-[200px]"
               >
                 <option value="">{t.tournament.viewAsAll}</option>
                 {allUsers.map((user) => (

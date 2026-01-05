@@ -173,26 +173,19 @@ export default function EditBookingDialog({
             <label className="block text-sm font-medium text-[var(--stone-700)] mb-2">
               {language === "de" ? "Neuer Spielpartner" : "New playing partner"}
             </label>
-            <div className="relative">
-              <select
-                value={selectedPartner}
-                onChange={(e) => setSelectedPartner(e.target.value)}
-                disabled={loadingUsers}
-                className="input-field appearance-none pr-10 cursor-pointer"
-              >
-                <option value="">{t.booking.noPartner}</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.first_name} {user.last_name}
-                  </option>
-                ))}
-              </select>
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                <svg className="w-5 h-5 text-[var(--stone-400)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
+            <select
+              value={selectedPartner}
+              onChange={(e) => setSelectedPartner(e.target.value)}
+              disabled={loadingUsers}
+              className="select-field"
+            >
+              <option value="">{t.booking.noPartner}</option>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.first_name} {user.last_name}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 

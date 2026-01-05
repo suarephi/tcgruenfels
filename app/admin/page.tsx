@@ -628,7 +628,7 @@ export default function AdminPage() {
                   <select
                     value={settings.startHour}
                     onChange={(e) => setSettings({ ...settings, startHour: parseInt(e.target.value) })}
-                    className="input-field w-20 text-center"
+                    className="select-field select-field-sm w-24"
                   >
                     {Array.from({ length: 24 }, (_, i) => (
                       <option key={i} value={i}>{i.toString().padStart(2, "0")}:00</option>
@@ -641,7 +641,7 @@ export default function AdminPage() {
                   <select
                     value={settings.endHour}
                     onChange={(e) => setSettings({ ...settings, endHour: parseInt(e.target.value) })}
-                    className="input-field w-20 text-center"
+                    className="select-field select-field-sm w-24"
                   >
                     {Array.from({ length: 24 }, (_, i) => i + 1).map((h) => (
                       <option key={h} value={h}>{h.toString().padStart(2, "0")}:00</option>
@@ -750,7 +750,7 @@ export default function AdminPage() {
                     <select
                       value={newTournament.type}
                       onChange={(e) => setNewTournament({ ...newTournament, type: e.target.value as "singles" | "doubles" })}
-                      className="input-field"
+                      className="select-field"
                     >
                       <option value="singles">{t.tournament.singles}</option>
                       <option value="doubles">{t.tournament.doubles}</option>
@@ -764,7 +764,7 @@ export default function AdminPage() {
                     <select
                       value={newTournament.format}
                       onChange={(e) => setNewTournament({ ...newTournament, format: e.target.value as "round_robin" | "single_elimination" | "group_knockout" })}
-                      className="input-field"
+                      className="select-field"
                     >
                       <option value="round_robin">{t.tournament.roundRobin}</option>
                       <option value="single_elimination">{t.tournament.singleElimination}</option>
