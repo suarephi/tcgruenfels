@@ -85,7 +85,10 @@ export async function getBookingsForDateRange(
     .order("date")
     .order("hour");
 
-  if (error) return [];
+  if (error) {
+    console.error("Error fetching bookings:", error);
+    return [];
+  }
 
   return data.map((booking) => ({
     id: booking.id,
