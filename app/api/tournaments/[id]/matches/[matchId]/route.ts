@@ -45,9 +45,9 @@ export async function PATCH(
       );
     }
 
-    const isInMatch =
-      userParticipant.id === match.participant1_id ||
-      userParticipant.id === match.participant2_id;
+    // Check if user is in this match (handle bye matches where one participant is null)
+    const matchParticipants = [match.participant1_id, match.participant2_id].filter(Boolean);
+    const isInMatch = matchParticipants.includes(userParticipant.id);
 
     if (!isInMatch) {
       return NextResponse.json(
@@ -77,8 +77,9 @@ export async function PATCH(
       );
     }
 
-    // Validate winner is one of the participants
-    if (winnerId !== match.participant1_id && winnerId !== match.participant2_id) {
+    // Validate winner is one of the participants (handle bye matches where one is null)
+    const validParticipants = [match.participant1_id, match.participant2_id].filter(Boolean);
+    if (!validParticipants.includes(winnerId)) {
       return NextResponse.json(
         { error: "Winner must be a participant in this match" },
         { status: 400 }

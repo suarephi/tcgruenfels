@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLanguage } from "@/lib/LanguageContext";
 
 interface Participant {
@@ -46,15 +46,30 @@ export default function MatchResultDialog({
   onSave,
   onCancel,
 }: MatchResultDialogProps) {
-  const { t } = useLanguage();
-  const [score, setScore] = useState(match.score || "");
-  const [winnerId, setWinnerId] = useState(match.winner_id || "");
-  const [saving, setSaving] = useState(false);
-
-  if (!isOpen) return null;
+  const { t, language } = useLanguage();
 
   const p1 = participants.find((p) => p.id === match.participant1_id);
   const p2 = participants.find((p) => p.id === match.participant2_id);
+
+  // Check if this is a bye match (one participant is null)
+  const isByeMatch = !match.participant1_id || !match.participant2_id;
+  const byeWinnerId = isByeMatch
+    ? (match.participant1_id || match.participant2_id || "")
+    : "";
+
+  const [score, setScore] = useState(match.score || (isByeMatch ? "Freilos" : ""));
+  const [winnerId, setWinnerId] = useState(match.winner_id || byeWinnerId);
+  const [saving, setSaving] = useState(false);
+
+  // Auto-set winner for bye matches
+  useEffect(() => {
+    if (isByeMatch && byeWinnerId && !winnerId) {
+      setWinnerId(byeWinnerId);
+      setScore("Freilos");
+    }
+  }, [isByeMatch, byeWinnerId, winnerId]);
+
+  if (!isOpen) return null;
 
   const getParticipantName = (participant?: Participant) => {
     if (!participant) return "Unknown";
@@ -74,6 +89,62 @@ export default function MatchResultDialog({
     await onSave(match.id, score.trim(), winnerId);
     setSaving(false);
   };
+
+  // For bye matches, show simplified UI
+  if (isByeMatch) {
+    const byeWinner = p1 || p2;
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div
+          className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          onClick={onCancel}
+        />
+        <div className="relative w-full max-w-md card-elevated p-6 animate-scale-in">
+          <h2 className="font-serif text-xl text-[var(--stone-900)] mb-4">
+            {language === "de" ? "Freilos bestätigen" : "Confirm Bye"}
+          </h2>
+
+          <div className="mb-6 p-4 rounded-lg bg-[var(--forest-50)] border border-[var(--forest-200)]">
+            <div className="flex items-center gap-3">
+              <svg className="w-5 h-5 text-[var(--forest-600)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <div>
+                <p className="font-medium text-[var(--forest-700)]">
+                  {getParticipantName(byeWinner)}
+                </p>
+                <p className="text-sm text-[var(--forest-600)]">
+                  {language === "de" ? "kommt weiter (Freilos)" : "advances (bye)"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={saving}
+              className="flex-1 btn-secondary"
+            >
+              {t.booking.cancelDialog}
+            </button>
+            <button
+              onClick={async () => {
+                setSaving(true);
+                await onSave(match.id, "Freilos", byeWinnerId);
+                setSaving(false);
+              }}
+              disabled={saving}
+              className="flex-1 btn-primary disabled:opacity-50"
+            >
+              {saving ? "..." : (language === "de" ? "Bestätigen" : "Confirm")}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

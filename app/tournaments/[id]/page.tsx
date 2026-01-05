@@ -842,7 +842,8 @@ export default function TournamentDetailPage() {
                   matches={knockoutMatches.length > 0 ? knockoutMatches : matches}
                   participants={participants}
                   onMatchClick={(match) => {
-                    if (canEditMatch(match) && match.participant1_id && match.participant2_id) {
+                    // Allow editing if at least one participant exists (for bye matches too)
+                    if (canEditMatch(match) && (match.participant1_id || match.participant2_id)) {
                       setMatchDialog({ isOpen: true, match });
                     }
                   }}
@@ -938,13 +939,16 @@ export default function TournamentDetailPage() {
                         {t.tournament.schedule}
                       </button>
                     )}
-                    {canEditMatch(match) && match.participant1_id && match.participant2_id && (
+                    {canEditMatch(match) && (match.participant1_id || match.participant2_id) && (
                       <button
                         onClick={() => setMatchDialog({ isOpen: true, match })}
                         className="text-sm font-medium px-3 py-1.5 rounded-lg transition-all hover:bg-[var(--forest-50)]"
                         style={{ color: "var(--forest-600)" }}
                       >
-                        {t.tournament.enterScore}
+                        {/* Show "Advance" for bye matches, "Enter Score" for normal matches */}
+                        {!match.participant1_id || !match.participant2_id
+                          ? (language === "de" ? "Weiter" : "Advance")
+                          : t.tournament.enterScore}
                       </button>
                     )}
                   </div>
