@@ -9,6 +9,8 @@ export const translations = {
       signOut: "Sign out",
       getStarted: "Get started",
       admin: "Admin",
+      myProfile: "My Profile",
+      myBookings: "My Bookings",
     },
     // Login page
     login: {
@@ -78,6 +80,7 @@ export const translations = {
       confirm: "Book",
       cancelDialog: "Cancel",
       with: "with",
+      bookedBy: "Booked by",
     },
     // Toast messages
     toast: {
@@ -128,6 +131,8 @@ export const translations = {
       signOut: "Abmelden",
       getStarted: "Registrieren",
       admin: "Admin",
+      myProfile: "Mein Profil",
+      myBookings: "Meine Buchungen",
     },
     // Login page
     login: {
@@ -197,6 +202,7 @@ export const translations = {
       confirm: "Buchen",
       cancelDialog: "Abbrechen",
       with: "mit",
+      bookedBy: "Gebucht von",
     },
     // Toast messages
     toast: {

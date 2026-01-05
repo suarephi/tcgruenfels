@@ -317,7 +317,7 @@ export default function BookingGrid() {
                     <div className="flex items-center gap-2">
                       <div className={`w-2 h-2 rounded-full ${isMyBooking ? "bg-white/80" : "bg-[var(--stone-400)]"}`} />
                       <span className={`font-medium text-sm ${isMyBooking ? "text-white" : "text-[var(--stone-600)]"}`}>
-                        {isMyBooking ? t.booking.yourBooking : `${booking.first_name} ${booking.last_name}`}
+                        {isMyBooking ? t.booking.yourBooking : `${t.booking.bookedBy} ${booking.first_name} ${booking.last_name}`}
                         {booking.partner_first_name && (
                           <span className={`font-normal ${isMyBooking ? "text-white/70" : "text-[var(--stone-400)]"}`}>
                             {" "}{t.booking.with} {booking.partner_first_name}
@@ -436,7 +436,7 @@ export default function BookingGrid() {
                       {booking ? (
                         <div className={`rounded-lg p-3 text-sm ${isMyBooking ? "slot-mine" : "slot-booked"}`}>
                           <div className={`font-medium ${isMyBooking ? "text-white" : "text-[var(--stone-600)]"}`}>
-                            {isMyBooking ? t.booking.yourBooking : `${booking.first_name} ${booking.last_name}`}
+                            {isMyBooking ? t.booking.yourBooking : `${t.booking.bookedBy} ${booking.first_name}`}
                             {booking.partner_first_name && (
                               <span className={`text-xs block mt-0.5 font-normal ${isMyBooking ? "text-white/70" : "text-[var(--stone-400)]"}`}>
                                 {t.booking.with} {booking.partner_first_name}
