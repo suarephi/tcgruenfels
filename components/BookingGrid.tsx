@@ -67,6 +67,21 @@ function formatHour(hour: number): string {
   return `${hour.toString().padStart(2, "0")}:00`;
 }
 
+// Format name as "P. Suarez"
+function formatName(firstName: string, lastName: string): string {
+  const initial = firstName ? firstName.charAt(0).toUpperCase() + "." : "";
+  return `${initial} ${lastName || ""}`.trim();
+}
+
+// Extract player names from tournament notes (format: "Tournament - Round: Player1 vs Player2")
+function extractTournamentPlayers(notes: string): string | null {
+  const colonIndex = notes.lastIndexOf(":");
+  if (colonIndex !== -1) {
+    return notes.substring(colonIndex + 1).trim();
+  }
+  return null;
+}
+
 export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamentBookingComplete }: BookingGridProps) {
   const { language, t } = useLanguage();
   const [data, setData] = useState<BookingData | null>(null);
@@ -431,13 +446,13 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       {booking.notes ? (
-                        /* Tournament booking - compact display */
+                        /* Tournament booking - show players from notes */
                         <div className="flex items-center gap-2 group relative">
                           <svg className={`w-4 h-4 flex-shrink-0 ${isMyBooking ? "text-white/80" : "text-[var(--terracotta-500)]"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                           </svg>
                           <span className={`font-medium text-sm ${isMyBooking ? "text-white" : "text-[var(--stone-600)]"}`}>
-                            {booking.first_name} {booking.last_name}
+                            {extractTournamentPlayers(booking.notes) || formatName(booking.first_name, booking.last_name)}
                           </span>
                           {/* Tooltip on hover */}
                           <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-10">
@@ -451,10 +466,10 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
                         <>
                           <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isMyBooking ? "bg-white/80" : "bg-[var(--stone-400)]"}`} />
                           <span className={`font-medium text-sm ${isMyBooking ? "text-white" : "text-[var(--stone-600)]"}`}>
-                            {isMyBooking ? t.booking.yourBooking : `${booking.first_name} ${booking.last_name}`}
-                            {booking.partner_first_name && (
+                            {isMyBooking ? t.booking.yourBooking : formatName(booking.first_name, booking.last_name)}
+                            {booking.partner_first_name && booking.partner_last_name && (
                               <span className={`font-normal ${isMyBooking ? "text-white/70" : "text-[var(--stone-400)]"}`}>
-                                {" "}+ {booking.partner_first_name}
+                                {" "}+ {formatName(booking.partner_first_name, booking.partner_last_name)}
                               </span>
                             )}
                           </span>
@@ -585,19 +600,19 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
                         <div className={`rounded-lg p-2 text-sm ${isMyBooking ? "slot-mine" : "slot-booked"} group relative`}>
                           <div className={`font-medium ${isMyBooking ? "text-white" : "text-[var(--stone-600)]"}`}>
                             {booking.notes ? (
-                              /* Tournament booking - compact with icon */
+                              /* Tournament booking - show players from notes */
                               <div className="flex items-center gap-1.5">
                                 <svg className={`w-3.5 h-3.5 flex-shrink-0 ${isMyBooking ? "text-white/80" : "text-[var(--terracotta-500)]"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                                 </svg>
-                                <span className="truncate">{booking.first_name}</span>
+                                <span className="truncate">{extractTournamentPlayers(booking.notes) || formatName(booking.first_name, booking.last_name)}</span>
                               </div>
                             ) : (
                               <>
-                                <div className="truncate">{isMyBooking ? t.booking.yourBooking : `${booking.first_name}`}</div>
-                                {booking.partner_first_name && (
+                                <div className="truncate">{isMyBooking ? t.booking.yourBooking : formatName(booking.first_name, booking.last_name)}</div>
+                                {booking.partner_first_name && booking.partner_last_name && (
                                   <span className={`text-xs block truncate font-normal ${isMyBooking ? "text-white/70" : "text-[var(--stone-400)]"}`}>
-                                    + {booking.partner_first_name}
+                                    + {formatName(booking.partner_first_name, booking.partner_last_name)}
                                   </span>
                                 )}
                               </>
