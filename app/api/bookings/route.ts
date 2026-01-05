@@ -85,8 +85,17 @@ export async function POST(request: NextRequest) {
   const isTournamentPlayer = activeTournaments.length > 0;
 
   try {
-    const { date, hour, partnerId, bookTwoHours } = await request.json();
-    const userId = user.id;
+    const { date, hour, partnerId, partnerIds, bookTwoHours, bookForUserId } = await request.json();
+
+    // Allow admin to book on behalf of another user
+    let userId = user.id;
+    if (bookForUserId && isAdmin) {
+      userId = bookForUserId;
+    }
+
+    // Support both old partnerId and new partnerIds array format
+    // For now, only store the first partner (database schema limitation)
+    const effectivePartnerId = partnerIds?.length > 0 ? partnerIds[0] : (partnerId || null);
 
     // Validate hour
     if (hour < 6 || hour > 21) {
@@ -156,11 +165,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the first booking
-    const bookingId = await createBooking(userId, date, hour, partnerId || null);
+    const bookingId = await createBooking(userId, date, hour, effectivePartnerId);
 
     // For 2-hour bookings, create the second booking
     if (bookTwoHours && isTournamentPlayer) {
-      await createBooking(userId, date, hour + 1, partnerId || null);
+      await createBooking(userId, date, hour + 1, effectivePartnerId);
     }
 
     return NextResponse.json({ id: bookingId }, { status: 201 });

@@ -5,6 +5,7 @@ import {
   getMatchById,
   getTournamentParticipants,
   updateMatchResult,
+  updateMatchSchedule,
   advanceWinnerToNextRound,
   getTournamentMatches,
 } from "@/lib/tournaments";
@@ -57,8 +58,18 @@ export async function PATCH(
   }
 
   try {
-    const { score, winnerId } = await request.json();
+    const { score, winnerId, scheduledDate } = await request.json();
 
+    // Handle schedule update (admin or match participants)
+    if (scheduledDate !== undefined) {
+      const success = await updateMatchSchedule(matchId, scheduledDate);
+      if (!success) {
+        return NextResponse.json({ error: "Schedule update failed" }, { status: 500 });
+      }
+      return NextResponse.json({ success: true });
+    }
+
+    // Handle score update
     if (!score || !winnerId) {
       return NextResponse.json(
         { error: "Score and winner are required" },

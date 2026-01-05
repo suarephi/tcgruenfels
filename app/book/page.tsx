@@ -6,9 +6,17 @@ import BookingGrid from "@/components/BookingGrid";
 import { useLanguage } from "@/lib/LanguageContext";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 
+interface User {
+  id: string;
+  first_name: string;
+  last_name: string;
+}
+
 export default function BookPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [viewAsUserId, setViewAsUserId] = useState<string | null>(null);
   const router = useRouter();
   const { t } = useLanguage();
   const supabase = createBrowserSupabaseClient();
@@ -28,7 +36,18 @@ export default function BookPage() {
         .eq("id", user.id)
         .single();
 
-      setIsAdmin(profile?.is_admin || false);
+      const admin = profile?.is_admin || false;
+      setIsAdmin(admin);
+
+      // Fetch all users for "View As" dropdown if admin
+      if (admin) {
+        const res = await fetch("/api/users");
+        if (res.ok) {
+          const data = await res.json();
+          setAllUsers(data.users || []);
+        }
+      }
+
       setLoading(false);
     };
 
@@ -76,24 +95,45 @@ export default function BookPage() {
           </div>
         </div>
 
-        {/* Admin Badge */}
+        {/* Admin Controls */}
         {isAdmin && (
-          <div
-            className="inline-flex items-center gap-2 mt-4 px-3 py-1.5 rounded-lg text-sm font-medium"
-            style={{
-              background: 'var(--terracotta-300)',
-              color: 'white',
-            }}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-            Admin Mode
+          <div className="mt-4 flex flex-wrap items-center gap-4">
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium"
+              style={{
+                background: 'var(--terracotta-300)',
+                color: 'white',
+              }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              Admin Mode
+            </div>
+
+            {/* View As dropdown */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-[var(--stone-500)]">
+                {t.tournament.viewAs}:
+              </label>
+              <select
+                value={viewAsUserId || ""}
+                onChange={(e) => setViewAsUserId(e.target.value || null)}
+                className="input-field py-1.5 text-sm min-w-[180px]"
+              >
+                <option value="">{t.tournament.viewAsAll}</option>
+                {allUsers.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.first_name} {user.last_name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         )}
       </div>
 
-      <BookingGrid />
+      <BookingGrid viewAsUserId={viewAsUserId} />
     </div>
   );
 }

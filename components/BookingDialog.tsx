@@ -13,7 +13,7 @@ interface BookingDialogProps {
   isOpen: boolean;
   date: string;
   hour: number;
-  onConfirm: (partnerId: string | null) => void;
+  onConfirm: (partnerIds: string[]) => void;
   onCancel: () => void;
   loading: boolean;
 }
@@ -28,12 +28,12 @@ export default function BookingDialog({
 }: BookingDialogProps) {
   const { language, t } = useLanguage();
   const [users, setUsers] = useState<User[]>([]);
-  const [selectedPartner, setSelectedPartner] = useState<string>("");
+  const [selectedPartners, setSelectedPartners] = useState<string[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      setSelectedPartner("");
+      setSelectedPartners([]);
       fetchUsers();
     }
   }, [isOpen]);
@@ -152,31 +152,52 @@ export default function BookingDialog({
             </div>
           </div>
 
-          {/* Partner Selection */}
+          {/* Partner Selection - up to 3 for doubles */}
           <div>
             <label className="block text-sm font-medium text-[var(--stone-700)] mb-2">
-              {t.booking.selectPartner}
+              {language === "de" ? "Mitspieler (bis zu 3 für Doppel)" : "Partners (up to 3 for doubles)"}
             </label>
-            <div className="relative">
-              <select
-                value={selectedPartner}
-                onChange={(e) => setSelectedPartner(e.target.value)}
-                disabled={loadingUsers}
-                className="input-field appearance-none pr-10 cursor-pointer"
-              >
-                <option value="">{t.booking.noPartner}</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.first_name} {user.last_name}
-                  </option>
-                ))}
-              </select>
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                <svg className="w-5 h-5 text-[var(--stone-400)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
+            <div className="space-y-2">
+              {[0, 1, 2].map((index) => (
+                <div key={index} className="relative">
+                  <select
+                    value={selectedPartners[index] || ""}
+                    onChange={(e) => {
+                      const newPartners = [...selectedPartners];
+                      if (e.target.value) {
+                        newPartners[index] = e.target.value;
+                      } else {
+                        newPartners.splice(index, 1);
+                      }
+                      setSelectedPartners(newPartners.filter(Boolean));
+                    }}
+                    disabled={loadingUsers || (index > 0 && !selectedPartners[index - 1])}
+                    className="input-field appearance-none pr-10 cursor-pointer disabled:opacity-50"
+                  >
+                    <option value="">
+                      {index === 0 ? t.booking.noPartner : (language === "de" ? "Kein weiterer Spieler" : "No additional player")}
+                    </option>
+                    {users
+                      .filter((user) => !selectedPartners.includes(user.id) || selectedPartners[index] === user.id)
+                      .map((user) => (
+                        <option key={user.id} value={user.id}>
+                          {user.first_name} {user.last_name}
+                        </option>
+                      ))}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <svg className="w-5 h-5 text-[var(--stone-400)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+              ))}
             </div>
+            {selectedPartners.length === 3 && (
+              <p className="text-xs text-[var(--forest-600)] mt-2">
+                {language === "de" ? "Doppel mit 4 Spielern" : "Doubles with 4 players"}
+              </p>
+            )}
           </div>
         </div>
 
@@ -190,7 +211,7 @@ export default function BookingDialog({
             {t.booking.cancelDialog}
           </button>
           <button
-            onClick={() => onConfirm(selectedPartner || null)}
+            onClick={() => onConfirm(selectedPartners)}
             disabled={loading}
             className="btn-primary flex items-center gap-2 disabled:opacity-50"
           >

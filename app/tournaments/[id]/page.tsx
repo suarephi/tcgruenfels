@@ -50,6 +50,7 @@ interface Match {
   score: string | null;
   winner_id: string | null;
   status: "pending" | "in_progress" | "completed";
+  scheduled_date: string | null;
   participant1?: Participant;
   participant2?: Participant;
 }
@@ -80,6 +81,11 @@ export default function TournamentDetailPage() {
     isOpen: false,
     match: null,
   });
+  const [scheduleDialog, setScheduleDialog] = useState<{ isOpen: boolean; match: Match | null }>({
+    isOpen: false,
+    match: null,
+  });
+  const [scheduleDate, setScheduleDate] = useState("");
 
   // Admin controls state
   const [showAddParticipant, setShowAddParticipant] = useState(false);
@@ -87,6 +93,7 @@ export default function TournamentDetailPage() {
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [doublesPartners, setDoublesPartners] = useState<Record<string, string>>({});
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [viewAsUserId, setViewAsUserId] = useState<string | null>(null);
 
   const tournamentId = params.id as string;
 
@@ -279,11 +286,14 @@ export default function TournamentDetailPage() {
   };
 
   const canEditMatch = (match: Match) => {
+    // Admin can always edit (or when viewing as any user)
     if (isAdmin) return true;
-    if (!currentUserId) return false;
+
+    const effectiveUserId = currentUserId;
+    if (!effectiveUserId) return false;
 
     const userParticipant = participants.find(
-      (p) => p.user_id === currentUserId || p.partner_id === currentUserId
+      (p) => p.user_id === effectiveUserId || p.partner_id === effectiveUserId
     );
     if (!userParticipant) return false;
 
@@ -291,6 +301,32 @@ export default function TournamentDetailPage() {
       match.participant1_id === userParticipant.id ||
       match.participant2_id === userParticipant.id
     );
+  };
+
+  // For "View As" - check if the impersonated user can edit this match
+  const canViewAsUserEditMatch = (match: Match) => {
+    if (!viewAsUserId) return false;
+
+    const userParticipant = participants.find(
+      (p) => p.user_id === viewAsUserId || p.partner_id === viewAsUserId
+    );
+    if (!userParticipant) return false;
+
+    return (
+      match.participant1_id === userParticipant.id ||
+      match.participant2_id === userParticipant.id
+    );
+  };
+
+  const getViewAsUserName = () => {
+    if (!viewAsUserId) return null;
+    const participant = participants.find(
+      (p) => p.user_id === viewAsUserId || p.partner_id === viewAsUserId
+    );
+    if (participant) {
+      return `${participant.user_first_name} ${participant.user_last_name}`;
+    }
+    return null;
   };
 
   const handleSaveResult = async (matchId: string, score: string, winnerId: string) => {
@@ -312,6 +348,43 @@ export default function TournamentDetailPage() {
     } finally {
       setMatchDialog({ isOpen: false, match: null });
     }
+  };
+
+  const handleSaveSchedule = async (matchId: string, date: string | null) => {
+    try {
+      const res = await fetch(`/api/tournaments/${tournamentId}/matches/${matchId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scheduledDate: date }),
+      });
+
+      if (res.ok) {
+        setToast({ message: t.tournament.scheduleSaved, type: "success" });
+        await fetchTournament();
+      } else {
+        setToast({ message: t.toast.somethingWrong, type: "error" });
+      }
+    } catch {
+      setToast({ message: t.toast.somethingWrong, type: "error" });
+    } finally {
+      setScheduleDialog({ isOpen: false, match: null });
+      setScheduleDate("");
+    }
+  };
+
+  const openScheduleDialog = (match: Match) => {
+    setScheduleDate(match.scheduled_date || "");
+    setScheduleDialog({ isOpen: true, match });
+  };
+
+  const formatScheduledDate = (dateStr: string | null) => {
+    if (!dateStr) return null;
+    const date = new Date(dateStr);
+    return date.toLocaleDateString(language === "de" ? "de-CH" : "en-US", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    });
   };
 
   const getStatusBadge = (status: string) => {
@@ -397,6 +470,67 @@ export default function TournamentDetailPage() {
           onSave={handleSaveResult}
           onCancel={() => setMatchDialog({ isOpen: false, match: null })}
         />
+      )}
+
+      {/* Schedule Match Modal */}
+      {scheduleDialog.isOpen && scheduleDialog.match && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => {
+              setScheduleDialog({ isOpen: false, match: null });
+              setScheduleDate("");
+            }}
+          />
+          <div className="relative w-full max-w-sm card-elevated p-6 animate-scale-in">
+            <h3 className="font-serif text-xl text-[var(--stone-900)] mb-4">
+              {t.tournament.schedule}
+            </h3>
+
+            <div className="mb-4">
+              <p className="text-sm text-[var(--stone-600)] mb-3">
+                {getParticipantName(scheduleDialog.match.participant1)} vs {getParticipantName(scheduleDialog.match.participant2)}
+              </p>
+              <label className="block text-sm font-medium text-[var(--stone-700)] mb-1.5">
+                {t.booking.date}
+              </label>
+              <input
+                type="date"
+                value={scheduleDate}
+                onChange={(e) => setScheduleDate(e.target.value)}
+                className="input-field"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setScheduleDialog({ isOpen: false, match: null });
+                  setScheduleDate("");
+                }}
+                className="flex-1 btn-secondary"
+              >
+                {t.booking.cancelDialog}
+              </button>
+              {scheduleDialog.match.scheduled_date && (
+                <button
+                  onClick={() => handleSaveSchedule(scheduleDialog.match!.id, null)}
+                  className="px-4 py-2 rounded-lg font-medium transition-all hover:bg-red-50"
+                  style={{ color: "#dc2626" }}
+                >
+                  {t.tournament.clearSchedule}
+                </button>
+              )}
+              <button
+                onClick={() => handleSaveSchedule(scheduleDialog.match!.id, scheduleDate || null)}
+                disabled={!scheduleDate}
+                className="flex-1 btn-primary disabled:opacity-50"
+              >
+                {t.tournament.setSchedule}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Add Participant Modal */}
@@ -564,6 +698,28 @@ export default function TournamentDetailPage() {
                   : language === "de" ? "Turnier beenden" : "End Tournament"}
               </button>
             )}
+
+            {/* View As dropdown */}
+            {participants.length > 0 && (
+              <div className="flex items-center gap-2 ml-auto">
+                <label className="text-sm text-[var(--stone-500)]">
+                  {t.tournament.viewAs}:
+                </label>
+                <select
+                  value={viewAsUserId || ""}
+                  onChange={(e) => setViewAsUserId(e.target.value || null)}
+                  className="input-field py-1.5 text-sm min-w-[180px]"
+                >
+                  <option value="">{t.tournament.viewAsAll}</option>
+                  {participants.map((p) => (
+                    <option key={p.id} value={p.user_id}>
+                      {p.user_first_name} {p.user_last_name}
+                      {p.partner_first_name && ` / ${p.partner_first_name} ${p.partner_last_name}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -645,10 +801,14 @@ export default function TournamentDetailPage() {
                 <p className="text-[var(--stone-500)]">{t.tournament.noMatches}</p>
               </div>
             ) : (
-              matches.map((match) => (
+              matches.map((match) => {
+                const isViewAsUserMatch = canViewAsUserEditMatch(match);
+                return (
                 <div
                   key={match.id}
-                  className="card-elevated p-4 flex items-center justify-between"
+                  className={`card-elevated p-4 flex items-center justify-between ${
+                    isViewAsUserMatch ? "ring-2 ring-[var(--terracotta-300)] bg-[var(--terracotta-50)]" : ""
+                  }`}
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-2 text-sm text-[var(--stone-500)] mb-1">
@@ -658,6 +818,14 @@ export default function TournamentDetailPage() {
                       <span>
                         {t.tournament.round} {match.round}
                       </span>
+                      {match.scheduled_date && (
+                        <>
+                          <span>•</span>
+                          <span className="text-[var(--forest-600)]">
+                            {formatScheduledDate(match.scheduled_date)}
+                          </span>
+                        </>
+                      )}
                     </div>
                     <div className="flex items-center gap-3">
                       <span
@@ -691,6 +859,15 @@ export default function TournamentDetailPage() {
                     )}
                     {canEditMatch(match) && match.participant1_id && match.participant2_id && (
                       <button
+                        onClick={() => openScheduleDialog(match)}
+                        className="text-sm font-medium px-3 py-1.5 rounded-lg transition-all hover:bg-[var(--terracotta-50)]"
+                        style={{ color: "var(--terracotta-500)" }}
+                      >
+                        {t.tournament.schedule}
+                      </button>
+                    )}
+                    {canEditMatch(match) && match.participant1_id && match.participant2_id && (
+                      <button
                         onClick={() => setMatchDialog({ isOpen: true, match })}
                         className="text-sm font-medium px-3 py-1.5 rounded-lg transition-all hover:bg-[var(--forest-50)]"
                         style={{ color: "var(--forest-600)" }}
@@ -700,7 +877,7 @@ export default function TournamentDetailPage() {
                     )}
                   </div>
                 </div>
-              ))
+              );})
             )}
           </div>
         )}

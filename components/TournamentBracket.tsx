@@ -27,6 +27,7 @@ interface Match {
   score: string | null;
   winner_id: string | null;
   status: "pending" | "in_progress" | "completed";
+  scheduled_date: string | null;
   participant1?: Participant;
   participant2?: Participant;
 }

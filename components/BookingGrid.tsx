@@ -46,13 +46,17 @@ interface ToastState {
   type: "error" | "success";
 }
 
+interface BookingGridProps {
+  viewAsUserId?: string | null;
+}
+
 const HOURS = Array.from({ length: 16 }, (_, i) => i + 6);
 
 function formatHour(hour: number): string {
   return `${hour.toString().padStart(2, "0")}:00`;
 }
 
-export default function BookingGrid() {
+export default function BookingGrid({ viewAsUserId }: BookingGridProps) {
   const { language, t } = useLanguage();
   const [data, setData] = useState<BookingData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -159,7 +163,7 @@ export default function BookingGrid() {
     });
   };
 
-  const handleBook = async (partnerId: string | null) => {
+  const handleBook = async (partnerIds: string[]) => {
     const { date, hour } = dialog;
     const key = `${date}-${hour}`;
     setActionLoading(key);
@@ -168,7 +172,12 @@ export default function BookingGrid() {
       const res = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date, hour, partnerId }),
+        body: JSON.stringify({
+          date,
+          hour,
+          partnerIds,
+          bookForUserId: viewAsUserId
+        }),
       });
 
       const json = await res.json();
@@ -271,6 +280,12 @@ export default function BookingGrid() {
     return date <= data.maxBookableDate;
   };
 
+  // Determine whose bookings to highlight (view as user or current user)
+  const effectiveUserId = viewAsUserId || data.currentUserId;
+  const isViewAsUserBooking = (booking: Booking): boolean => {
+    return booking.user_id === effectiveUserId;
+  };
+
   const selectedDate = data.dates[selectedDayIndex];
   const canBookSelectedDate = isBookable(selectedDate);
 
@@ -359,7 +374,8 @@ export default function BookingGrid() {
       <div className="card-elevated rounded-t-none divide-y divide-[var(--stone-100)]">
         {HOURS.map((hour, index) => {
           const booking = getBooking(selectedDate, hour);
-          const isMyBooking = booking && booking.user_id === data.currentUserId;
+          const isMyBooking = booking && isViewAsUserBooking(booking);
+          const isActuallyMyBooking = booking && booking.user_id === data.currentUserId;
           const key = `${selectedDate}-${hour}`;
           const isLoading = actionLoading === key || actionLoading === `cancel-${booking?.id}` || actionLoading === `edit-${booking?.id}`;
 
@@ -393,9 +409,9 @@ export default function BookingGrid() {
                         )}
                       </span>
                     </div>
-                    {(isMyBooking || data?.isAdmin) && canBookSelectedDate && (
+                    {(isMyBooking || isActuallyMyBooking || data?.isAdmin) && canBookSelectedDate && (
                       <div className="flex items-center gap-1">
-                        {isMyBooking && (
+                        {(isMyBooking || isActuallyMyBooking) && (
                           <button
                             onClick={() => openEditDialog(booking)}
                             disabled={isLoading}
@@ -500,7 +516,8 @@ export default function BookingGrid() {
 
                 {data.dates.map((date) => {
                   const booking = getBooking(date, hour);
-                  const isMyBooking = booking && booking.user_id === data.currentUserId;
+                  const isMyBooking = booking && isViewAsUserBooking(booking);
+                  const isActuallyMyBooking = booking && booking.user_id === data.currentUserId;
                   const key = `${date}-${hour}`;
                   const isLoading = actionLoading === key || actionLoading === `cancel-${booking?.id}` || actionLoading === `edit-${booking?.id}`;
                   const canBook = isBookable(date);
@@ -522,9 +539,9 @@ export default function BookingGrid() {
                               </span>
                             )}
                           </div>
-                          {(isMyBooking || data?.isAdmin) && canBook && (
+                          {(isMyBooking || isActuallyMyBooking || data?.isAdmin) && canBook && (
                             <div className="mt-2 flex items-center gap-1">
-                              {isMyBooking && (
+                              {(isMyBooking || isActuallyMyBooking) && (
                                 <button
                                   onClick={() => openEditDialog(booking)}
                                   disabled={isLoading}

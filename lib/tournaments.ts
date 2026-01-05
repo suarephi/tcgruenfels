@@ -308,6 +308,20 @@ export async function updateMatchResult(
   return !error;
 }
 
+export async function updateMatchSchedule(
+  matchId: string,
+  scheduledDate: string | null
+): Promise<boolean> {
+  const { error } = await supabase
+    .from("tournament_matches")
+    .update({
+      scheduled_date: scheduledDate,
+    })
+    .eq("id", matchId);
+
+  return !error;
+}
+
 export async function createMatch(
   tournamentId: string,
   round: number,

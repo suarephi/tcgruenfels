@@ -28,6 +28,7 @@ interface Match {
   score: string | null;
   winner_id: string | null;
   status: "pending" | "in_progress" | "completed";
+  scheduled_date: string | null;
 }
 
 interface MatchResultDialogProps {
