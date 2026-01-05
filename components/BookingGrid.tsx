@@ -46,8 +46,16 @@ interface ToastState {
   type: "error" | "success";
 }
 
+interface TournamentMatchContext {
+  tournamentId: string;
+  matchId: string;
+  matchInfo: string;
+}
+
 interface BookingGridProps {
   viewAsUserId?: string | null;
+  tournamentMatch?: TournamentMatchContext | null;
+  onTournamentBookingComplete?: () => void;
 }
 
 const HOURS = Array.from({ length: 16 }, (_, i) => i + 6);
@@ -56,7 +64,7 @@ function formatHour(hour: number): string {
   return `${hour.toString().padStart(2, "0")}:00`;
 }
 
-export default function BookingGrid({ viewAsUserId }: BookingGridProps) {
+export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamentBookingComplete }: BookingGridProps) {
   const { language, t } = useLanguage();
   const [data, setData] = useState<BookingData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -169,6 +177,9 @@ export default function BookingGrid({ viewAsUserId }: BookingGridProps) {
     setActionLoading(key);
 
     try {
+      // For tournament matches, book 2 hours
+      const bookTwoHours = !!tournamentMatch;
+
       const res = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -176,7 +187,8 @@ export default function BookingGrid({ viewAsUserId }: BookingGridProps) {
           date,
           hour,
           partnerIds,
-          bookForUserId: viewAsUserId
+          bookForUserId: viewAsUserId,
+          bookTwoHours,
         }),
       });
 
@@ -184,8 +196,20 @@ export default function BookingGrid({ viewAsUserId }: BookingGridProps) {
       if (!res.ok) {
         showToast(translateError(json.error) || t.toast.bookingFailed, "error");
       } else {
-        showToast(t.toast.bookingSuccess, "success");
-        await fetchBookings();
+        // If this is a tournament match, update the match schedule
+        if (tournamentMatch) {
+          const scheduledDateTime = `${date}T${hour.toString().padStart(2, "0")}:00`;
+          await fetch(`/api/tournaments/${tournamentMatch.tournamentId}/matches/${tournamentMatch.matchId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ scheduledDate: scheduledDateTime }),
+          });
+          showToast(t.toast.bookingSuccess, "success");
+          onTournamentBookingComplete?.();
+        } else {
+          showToast(t.toast.bookingSuccess, "success");
+          await fetchBookings();
+        }
       }
     } catch {
       showToast(t.toast.somethingWrong, "error");
@@ -612,6 +636,7 @@ export default function BookingGrid({ viewAsUserId }: BookingGridProps) {
         onConfirm={handleBook}
         onCancel={closeBookingDialog}
         loading={actionLoading === `${dialog.date}-${dialog.hour}`}
+        tournamentMatch={tournamentMatch}
       />
 
       <EditBookingDialog

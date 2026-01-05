@@ -9,6 +9,12 @@ interface User {
   last_name: string;
 }
 
+interface TournamentMatchContext {
+  tournamentId: string;
+  matchId: string;
+  matchInfo: string;
+}
+
 interface BookingDialogProps {
   isOpen: boolean;
   date: string;
@@ -16,6 +22,7 @@ interface BookingDialogProps {
   onConfirm: (partnerIds: string[]) => void;
   onCancel: () => void;
   loading: boolean;
+  tournamentMatch?: TournamentMatchContext | null;
 }
 
 export default function BookingDialog({
@@ -25,6 +32,7 @@ export default function BookingDialog({
   onConfirm,
   onCancel,
   loading,
+  tournamentMatch,
 }: BookingDialogProps) {
   const { language, t } = useLanguage();
   const [users, setUsers] = useState<User[]>([]);
@@ -64,7 +72,8 @@ export default function BookingDialog({
   };
 
   const formatHour = (h: number): string => {
-    return `${h.toString().padStart(2, "0")}:00 - ${(h + 1).toString().padStart(2, "0")}:00`;
+    const endHour = tournamentMatch ? h + 2 : h + 1;
+    return `${h.toString().padStart(2, "0")}:00 - ${endHour.toString().padStart(2, "0")}:00`;
   };
 
   if (!isOpen) return null;
@@ -94,8 +103,16 @@ export default function BookingDialog({
           </div>
 
           <div className="relative">
-            <h2 className="font-serif text-2xl text-white">{t.booking.confirmTitle}</h2>
-            <p className="text-[var(--forest-200)] mt-1">{t.booking.confirmMessage}</p>
+            <h2 className="font-serif text-2xl text-white">
+              {tournamentMatch
+                ? (language === "de" ? "Turnierspiel buchen" : "Book Tournament Match")
+                : t.booking.confirmTitle}
+            </h2>
+            <p className="text-[var(--forest-200)] mt-1">
+              {tournamentMatch
+                ? tournamentMatch.matchInfo
+                : t.booking.confirmMessage}
+            </p>
           </div>
         </div>
 
@@ -152,53 +169,74 @@ export default function BookingDialog({
             </div>
           </div>
 
-          {/* Partner Selection - up to 3 for doubles */}
-          <div>
-            <label className="block text-sm font-medium text-[var(--stone-700)] mb-2">
-              {language === "de" ? "Mitspieler (bis zu 3 für Doppel)" : "Partners (up to 3 for doubles)"}
-            </label>
-            <div className="space-y-2">
-              {[0, 1, 2].map((index) => (
-                <div key={index} className="relative">
-                  <select
-                    value={selectedPartners[index] || ""}
-                    onChange={(e) => {
-                      const newPartners = [...selectedPartners];
-                      if (e.target.value) {
-                        newPartners[index] = e.target.value;
-                      } else {
-                        newPartners.splice(index, 1);
-                      }
-                      setSelectedPartners(newPartners.filter(Boolean));
-                    }}
-                    disabled={loadingUsers || (index > 0 && !selectedPartners[index - 1])}
-                    className="input-field appearance-none pr-10 cursor-pointer disabled:opacity-50"
-                  >
-                    <option value="">
-                      {index === 0 ? t.booking.noPartner : (language === "de" ? "Kein weiterer Spieler" : "No additional player")}
-                    </option>
-                    {users
-                      .filter((user) => !selectedPartners.includes(user.id) || selectedPartners[index] === user.id)
-                      .map((user) => (
-                        <option key={user.id} value={user.id}>
-                          {user.first_name} {user.last_name}
-                        </option>
-                      ))}
-                  </select>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <svg className="w-5 h-5 text-[var(--stone-400)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
+          {/* Partner Selection - up to 3 for doubles (hidden for tournament matches) */}
+          {!tournamentMatch && (
+            <div>
+              <label className="block text-sm font-medium text-[var(--stone-700)] mb-2">
+                {language === "de" ? "Mitspieler (bis zu 3 für Doppel)" : "Partners (up to 3 for doubles)"}
+              </label>
+              <div className="space-y-2">
+                {[0, 1, 2].map((index) => (
+                  <div key={index} className="relative">
+                    <select
+                      value={selectedPartners[index] || ""}
+                      onChange={(e) => {
+                        const newPartners = [...selectedPartners];
+                        if (e.target.value) {
+                          newPartners[index] = e.target.value;
+                        } else {
+                          newPartners.splice(index, 1);
+                        }
+                        setSelectedPartners(newPartners.filter(Boolean));
+                      }}
+                      disabled={loadingUsers || (index > 0 && !selectedPartners[index - 1])}
+                      className="input-field appearance-none pr-10 cursor-pointer disabled:opacity-50"
+                    >
+                      <option value="">
+                        {index === 0 ? t.booking.noPartner : (language === "de" ? "Kein weiterer Spieler" : "No additional player")}
+                      </option>
+                      {users
+                        .filter((user) => !selectedPartners.includes(user.id) || selectedPartners[index] === user.id)
+                        .map((user) => (
+                          <option key={user.id} value={user.id}>
+                            {user.first_name} {user.last_name}
+                          </option>
+                        ))}
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <svg className="w-5 h-5 text-[var(--stone-400)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+              {selectedPartners.length === 3 && (
+                <p className="text-xs text-[var(--forest-600)] mt-2">
+                  {language === "de" ? "Doppel mit 4 Spielern" : "Doubles with 4 players"}
+                </p>
+              )}
             </div>
-            {selectedPartners.length === 3 && (
-              <p className="text-xs text-[var(--forest-600)] mt-2">
-                {language === "de" ? "Doppel mit 4 Spielern" : "Doubles with 4 players"}
-              </p>
-            )}
-          </div>
+          )}
+
+          {/* Tournament match info */}
+          {tournamentMatch && (
+            <div
+              className="p-4 rounded-xl"
+              style={{ background: 'var(--terracotta-50)', border: '1px solid var(--terracotta-100)' }}
+            >
+              <div className="flex items-center gap-2 text-sm text-[var(--terracotta-700)]">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>
+                  {language === "de"
+                    ? "2 Stunden werden für dieses Turnierspiel gebucht"
+                    : "2 hours will be booked for this tournament match"}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}

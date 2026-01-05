@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import BookingGrid from "@/components/BookingGrid";
 import { useLanguage } from "@/lib/LanguageContext";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
@@ -12,14 +12,33 @@ interface User {
   last_name: string;
 }
 
-export default function BookPage() {
+interface TournamentMatchContext {
+  tournamentId: string;
+  matchId: string;
+  matchInfo: string;
+}
+
+function BookPageContent() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [viewAsUserId, setViewAsUserId] = useState<string | null>(null);
+  const [tournamentMatch, setTournamentMatch] = useState<TournamentMatchContext | null>(null);
   const router = useRouter();
-  const { t } = useLanguage();
+  const searchParams = useSearchParams();
+  const { t, language } = useLanguage();
   const supabase = createBrowserSupabaseClient();
+
+  useEffect(() => {
+    // Check for tournament match context in URL
+    const tournamentId = searchParams.get("tournamentId");
+    const matchId = searchParams.get("matchId");
+    const matchInfo = searchParams.get("matchInfo");
+
+    if (tournamentId && matchId && matchInfo) {
+      setTournamentMatch({ tournamentId, matchId, matchInfo });
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -70,8 +89,54 @@ export default function BookPage() {
     );
   }
 
+  const cancelTournamentBooking = () => {
+    if (tournamentMatch) {
+      router.push(`/tournaments/${tournamentMatch.tournamentId}`);
+    }
+  };
+
   return (
     <div className="py-8 md:py-12">
+      {/* Tournament Match Banner */}
+      {tournamentMatch && (
+        <div
+          className="mb-6 p-4 rounded-xl animate-fade-in flex items-center justify-between"
+          style={{
+            background: 'linear-gradient(135deg, var(--terracotta-100) 0%, var(--terracotta-50) 100%)',
+            border: '1px solid var(--terracotta-200)',
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className="w-10 h-10 rounded-lg flex items-center justify-center"
+              style={{ background: 'var(--terracotta-200)' }}
+            >
+              <svg className="w-5 h-5 text-[var(--terracotta-700)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </div>
+            <div>
+              <div className="text-sm font-medium text-[var(--terracotta-700)]">
+                {language === "de" ? "Turnierspiel planen" : "Schedule Tournament Match"}
+              </div>
+              <div className="text-[var(--terracotta-900)] font-semibold">
+                {tournamentMatch.matchInfo}
+              </div>
+              <div className="text-xs text-[var(--terracotta-600)] mt-0.5">
+                {language === "de" ? "Wählen Sie einen 2-Stunden-Slot für das Spiel" : "Select a 2-hour slot for the match"}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={cancelTournamentBooking}
+            className="text-sm font-medium px-3 py-1.5 rounded-lg transition-all hover:bg-[var(--terracotta-200)]"
+            style={{ color: 'var(--terracotta-700)' }}
+          >
+            {language === "de" ? "Abbrechen" : "Cancel"}
+          </button>
+        </div>
+      )}
+
       {/* Page Header */}
       <div className="mb-8 md:mb-10 animate-fade-in">
         <div className="flex items-start gap-4">
@@ -133,7 +198,35 @@ export default function BookPage() {
         )}
       </div>
 
-      <BookingGrid viewAsUserId={viewAsUserId} />
+      <BookingGrid
+        viewAsUserId={viewAsUserId}
+        tournamentMatch={tournamentMatch}
+        onTournamentBookingComplete={() => {
+          if (tournamentMatch) {
+            router.push(`/tournaments/${tournamentMatch.tournamentId}`);
+          }
+        }}
+      />
     </div>
+  );
+}
+
+export default function BookPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+        <div className="relative w-12 h-12">
+          <div
+            className="absolute inset-0 rounded-full animate-spin"
+            style={{
+              border: '3px solid var(--forest-100)',
+              borderTopColor: 'var(--forest-600)',
+            }}
+          />
+        </div>
+      </div>
+    }>
+      <BookPageContent />
+    </Suspense>
   );
 }

@@ -373,8 +373,15 @@ export default function TournamentDetailPage() {
   };
 
   const openScheduleDialog = (match: Match) => {
-    setScheduleDate(match.scheduled_date || "");
-    setScheduleDialog({ isOpen: true, match });
+    // Navigate to booking page with tournament match context
+    const p1Name = getParticipantName(match.participant1);
+    const p2Name = getParticipantName(match.participant2);
+    const params = new URLSearchParams({
+      tournamentId,
+      matchId: match.id,
+      matchInfo: `${p1Name} vs ${p2Name}`,
+    });
+    router.push(`/book?${params.toString()}`);
   };
 
   const formatScheduledDate = (dateStr: string | null) => {

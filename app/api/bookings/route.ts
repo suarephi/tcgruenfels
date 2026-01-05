@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     }
 
     // For 2-hour bookings, validate second hour too
-    if (bookTwoHours && isTournamentPlayer && hour > 20) {
+    if (bookTwoHours && hour > 20) {
       return NextResponse.json(
         { error: "Cannot book 2 hours starting after 20:00" },
         { status: 400 }
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
     }
 
     // For 2-hour bookings, check the second slot too
-    if (bookTwoHours && isTournamentPlayer) {
+    if (bookTwoHours) {
       const existingSecondBooking = await getBookingByDateAndHour(date, hour + 1);
       if (existingSecondBooking) {
         return NextResponse.json(
@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
     const bookingId = await createBooking(userId, date, hour, effectivePartnerId);
 
     // For 2-hour bookings, create the second booking
-    if (bookTwoHours && isTournamentPlayer) {
+    if (bookTwoHours) {
       await createBooking(userId, date, hour + 1, effectivePartnerId);
     }
 
