@@ -70,84 +70,145 @@ export default function BookingDialog({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white p-6">
-          <h2 className="text-xl font-semibold">{t.booking.confirmTitle}</h2>
-          <p className="text-emerald-100 mt-1">{t.booking.confirmMessage}</p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-[var(--stone-900)]/60 backdrop-blur-sm animate-fade-in"
+        onClick={onCancel}
+      />
+
+      {/* Dialog */}
+      <div className="relative w-full max-w-md card-elevated overflow-hidden animate-scale-in">
+        {/* Header with pattern */}
+        <div
+          className="relative overflow-hidden p-6"
+          style={{
+            background: 'linear-gradient(135deg, var(--forest-700) 0%, var(--forest-800) 100%)',
+          }}
+        >
+          {/* Decorative tennis court lines */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-1/2 left-0 right-0 h-px bg-white" />
+            <div className="absolute top-0 bottom-0 left-1/2 w-px bg-white" />
+            <div className="absolute top-4 bottom-4 left-4 right-4 border border-white rounded-sm" />
+          </div>
+
+          <div className="relative">
+            <h2 className="font-serif text-2xl text-white">{t.booking.confirmTitle}</h2>
+            <p className="text-[var(--forest-200)] mt-1">{t.booking.confirmMessage}</p>
+          </div>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-4">
-          {/* Date and Time */}
-          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <div>
-                <div className="text-xs text-gray-500 uppercase tracking-wide">{t.booking.date}</div>
-                <div className="font-medium text-gray-900">{formatDate(date)}</div>
+        <div className="p-6 space-y-5">
+          {/* Date and Time Cards */}
+          <div className="grid grid-cols-2 gap-3">
+            <div
+              className="p-4 rounded-xl"
+              style={{ background: 'var(--cream-100)' }}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center"
+                  style={{ background: 'var(--forest-100)' }}
+                >
+                  <svg className="w-5 h-5 text-[var(--forest-600)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-wide text-[var(--stone-500)] font-medium">
+                    {t.booking.date}
+                  </div>
+                  <div className="font-medium text-[var(--stone-800)] text-sm">
+                    {formatDate(date)}
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div>
-                <div className="text-xs text-gray-500 uppercase tracking-wide">{t.booking.time}</div>
-                <div className="font-medium text-gray-900">{formatHour(hour)}</div>
+
+            <div
+              className="p-4 rounded-xl"
+              style={{ background: 'var(--cream-100)' }}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center"
+                  style={{ background: 'var(--forest-100)' }}
+                >
+                  <svg className="w-5 h-5 text-[var(--forest-600)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-wide text-[var(--stone-500)] font-medium">
+                    {t.booking.time}
+                  </div>
+                  <div className="font-medium text-[var(--stone-800)] text-sm">
+                    {formatHour(hour)}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Partner Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-[var(--stone-700)] mb-2">
               {t.booking.selectPartner}
             </label>
-            <select
-              value={selectedPartner}
-              onChange={(e) => setSelectedPartner(e.target.value)}
-              disabled={loadingUsers}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition text-gray-900 bg-white"
-            >
-              <option value="">{t.booking.noPartner}</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.first_name} {user.last_name}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={selectedPartner}
+                onChange={(e) => setSelectedPartner(e.target.value)}
+                disabled={loadingUsers}
+                className="input-field appearance-none pr-10 cursor-pointer"
+              >
+                <option value="">{t.booking.noPartner}</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.first_name} {user.last_name}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                <svg className="w-5 h-5 text-[var(--stone-400)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-gray-50 flex gap-3 justify-end">
+        <div className="px-6 py-4 flex gap-3 justify-end border-t border-[var(--stone-100)]" style={{ background: 'var(--cream-50)' }}>
           <button
             onClick={onCancel}
             disabled={loading}
-            className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg font-medium transition disabled:opacity-50"
+            className="btn-secondary disabled:opacity-50"
           >
             {t.booking.cancelDialog}
           </button>
           <button
             onClick={() => onConfirm(selectedPartner || null)}
             disabled={loading}
-            className="px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition disabled:opacity-50 flex items-center gap-2"
+            className="btn-primary flex items-center gap-2 disabled:opacity-50"
           >
             {loading ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <div
+                  className="w-4 h-4 rounded-full animate-spin"
+                  style={{ border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white' }}
+                />
                 {t.booking.booking}
               </>
             ) : (
-              t.booking.confirm
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                {t.booking.confirm}
+              </>
             )}
           </button>
         </div>

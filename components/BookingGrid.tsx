@@ -167,16 +167,30 @@ export default function BookingGrid() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+        <div className="relative w-12 h-12">
+          <div
+            className="absolute inset-0 rounded-full animate-spin"
+            style={{
+              border: '3px solid var(--forest-100)',
+              borderTopColor: 'var(--forest-600)',
+            }}
+          />
+        </div>
+        <span className="text-[var(--stone-500)] text-sm">{t.booking.loading}</span>
       </div>
     );
   }
 
   if (!data) {
     return (
-      <div className="text-center py-16 text-gray-500">
-        {t.booking.unableToLoad}
+      <div className="card-elevated p-12 text-center">
+        <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ background: 'var(--cream-200)' }}>
+          <svg className="w-8 h-8 text-[var(--stone-400)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <p className="text-[var(--stone-600)]">{t.booking.unableToLoad}</p>
       </div>
     );
   }
@@ -192,25 +206,37 @@ export default function BookingGrid() {
   const selectedDate = data.dates[selectedDayIndex];
   const canBookSelectedDate = isBookable(selectedDate);
 
-  // Mobile: Single day view
+  // Mobile: Single day view with elegant cards
   const MobileView = () => (
-    <div className="md:hidden">
-      {/* Day Navigation */}
-      <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-t-xl p-4">
-        <div className="flex items-center justify-between">
+    <div className="md:hidden animate-fade-in">
+      {/* Day Navigation Header */}
+      <div
+        className="relative overflow-hidden rounded-t-2xl p-5"
+        style={{
+          background: 'linear-gradient(135deg, var(--forest-700) 0%, var(--forest-800) 100%)',
+        }}
+      >
+        {/* Decorative pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0" style={{
+            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.1) 10px, rgba(255,255,255,0.1) 20px)',
+          }} />
+        </div>
+
+        <div className="relative flex items-center justify-between">
           <button
             onClick={() => setSelectedDayIndex(Math.max(0, selectedDayIndex - 1))}
             disabled={selectedDayIndex === 0}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:hover:bg-white/10 transition"
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 disabled:opacity-30 transition-all"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
 
           <div className="text-center">
-            <div className="text-lg font-semibold">{formatDateLong(selectedDate)}</div>
-            <div className={`text-xs mt-0.5 ${canBookSelectedDate ? "text-emerald-200" : "text-amber-200"}`}>
+            <div className="font-serif text-xl text-white">{formatDateLong(selectedDate)}</div>
+            <div className={`text-xs mt-1 font-medium ${canBookSelectedDate ? "text-[var(--forest-200)]" : "text-[var(--terracotta-300)]"}`}>
               {canBookSelectedDate ? t.booking.availableForBooking : t.booking.viewOnly}
             </div>
           </div>
@@ -218,71 +244,84 @@ export default function BookingGrid() {
           <button
             onClick={() => setSelectedDayIndex(Math.min(data.dates.length - 1, selectedDayIndex + 1))}
             disabled={selectedDayIndex === data.dates.length - 1}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:hover:bg-white/10 transition"
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 disabled:opacity-30 transition-all"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
         </div>
 
         {/* Day Pills */}
-        <div className="mt-4 flex gap-1.5 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
-          {data.dates.slice(0, 7).map((date, idx) => (
-            <button
-              key={date}
-              onClick={() => setSelectedDayIndex(idx)}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition ${
-                idx === selectedDayIndex
-                  ? "bg-white text-emerald-700"
-                  : isBookable(date)
-                  ? "bg-white/20 text-white hover:bg-white/30"
-                  : "bg-white/10 text-white/60"
-              }`}
-            >
-              {formatDateShort(date)}
-            </button>
-          ))}
+        <div className="mt-5 flex gap-2 overflow-x-auto pb-1 -mx-5 px-5 scrollbar-hide">
+          {data.dates.slice(0, 7).map((date, idx) => {
+            const dayDate = new Date(date + "T12:00:00");
+            const dayName = dayDate.toLocaleDateString(language === "de" ? "de-DE" : "en-US", { weekday: 'short' });
+            const dayNum = dayDate.getDate();
+
+            return (
+              <button
+                key={date}
+                onClick={() => setSelectedDayIndex(idx)}
+                className={`flex-shrink-0 flex flex-col items-center px-3 py-2 rounded-xl transition-all ${
+                  idx === selectedDayIndex
+                    ? "bg-white text-[var(--forest-700)]"
+                    : isBookable(date)
+                    ? "bg-white/10 text-white hover:bg-white/20"
+                    : "bg-white/5 text-white/50"
+                }`}
+              >
+                <span className="text-[10px] uppercase tracking-wide font-medium opacity-70">{dayName}</span>
+                <span className="text-lg font-semibold">{dayNum}</span>
+              </button>
+            );
+          })}
           {data.dates.length > 7 && (
             <button
               onClick={() => setSelectedDayIndex(7)}
-              className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium bg-white/10 text-white/60"
+              className="flex-shrink-0 px-3 py-2 rounded-xl bg-white/5 text-white/50 text-xs"
             >
-              +{data.dates.length - 7} {t.booking.moredays}
+              +{data.dates.length - 7}
             </button>
           )}
         </div>
       </div>
 
       {/* Time Slots */}
-      <div className="bg-white rounded-b-xl shadow-sm border border-t-0 border-gray-200 divide-y divide-gray-100">
-        {HOURS.map((hour) => {
+      <div className="card-elevated rounded-t-none divide-y divide-[var(--stone-100)]">
+        {HOURS.map((hour, index) => {
           const booking = getBooking(selectedDate, hour);
           const isMyBooking = booking && booking.user_id === data.currentUserId;
           const key = `${selectedDate}-${hour}`;
           const isLoading = actionLoading === key || actionLoading === `cancel-${booking?.id}`;
 
           return (
-            <div key={hour} className="flex items-center p-4 gap-4">
-              <div className="w-20 text-sm font-medium text-gray-500">
-                {formatHour(hour)}
+            <div
+              key={hour}
+              className="flex items-center p-4 gap-4 opacity-0 animate-slide-up"
+              style={{ animationDelay: `${index * 30}ms`, animationFillMode: 'forwards' }}
+            >
+              <div className="w-16 text-center">
+                <span className="text-sm font-semibold text-[var(--stone-700)]">
+                  {formatHour(hour)}
+                </span>
               </div>
 
               <div className="flex-1">
                 {booking ? (
                   <div
-                    className={`rounded-lg px-4 py-2.5 flex items-center justify-between ${
-                      isMyBooking
-                        ? "bg-emerald-50 border border-emerald-200"
-                        : "bg-gray-50 border border-gray-200"
+                    className={`rounded-xl px-4 py-3 flex items-center justify-between ${
+                      isMyBooking ? "slot-mine" : "slot-booked"
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${isMyBooking ? "bg-emerald-500" : "bg-gray-400"}`}></div>
-                      <span className={`font-medium text-sm ${isMyBooking ? "text-emerald-700" : "text-gray-600"}`}>
+                      <div className={`w-2 h-2 rounded-full ${isMyBooking ? "bg-white/80" : "bg-[var(--stone-400)]"}`} />
+                      <span className={`font-medium text-sm ${isMyBooking ? "text-white" : "text-[var(--stone-600)]"}`}>
                         {isMyBooking ? t.booking.yourBooking : `${booking.first_name} ${booking.last_name}`}
                         {booking.partner_first_name && (
-                          <span className="text-gray-400 font-normal"> {t.booking.with} {booking.partner_first_name}</span>
+                          <span className={`font-normal ${isMyBooking ? "text-white/70" : "text-[var(--stone-400)]"}`}>
+                            {" "}{t.booking.with} {booking.partner_first_name}
+                          </span>
                         )}
                       </span>
                     </div>
@@ -290,7 +329,11 @@ export default function BookingGrid() {
                       <button
                         onClick={() => handleCancel(booking.id)}
                         disabled={isLoading}
-                        className="text-xs text-red-500 hover:text-red-600 font-medium disabled:opacity-50"
+                        className={`text-xs font-medium px-2 py-1 rounded-lg transition-all disabled:opacity-50 ${
+                          isMyBooking
+                            ? "text-white/80 hover:bg-white/10"
+                            : "text-red-500 hover:bg-red-50"
+                        }`}
                       >
                         {isLoading ? "..." : t.booking.cancel}
                       </button>
@@ -300,11 +343,14 @@ export default function BookingGrid() {
                   <button
                     onClick={() => openBookingDialog(selectedDate, hour)}
                     disabled={isLoading}
-                    className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition disabled:opacity-50 text-sm font-medium shadow-sm"
+                    className="w-full py-3 slot-available rounded-xl font-medium text-sm disabled:opacity-50"
                   >
                     {isLoading ? (
                       <span className="flex items-center justify-center gap-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <div
+                          className="w-4 h-4 rounded-full animate-spin"
+                          style={{ border: '2px solid var(--forest-200)', borderTopColor: 'var(--forest-600)' }}
+                        />
                         {t.booking.booking}
                       </span>
                     ) : (
@@ -312,7 +358,7 @@ export default function BookingGrid() {
                     )}
                   </button>
                 ) : (
-                  <div className="w-full py-2.5 bg-gray-50 text-gray-400 rounded-lg text-center text-sm border border-dashed border-gray-200">
+                  <div className="w-full py-3 slot-unavailable rounded-xl text-center text-sm">
                     {t.booking.notAvailableYet}
                   </div>
                 )}
@@ -324,35 +370,52 @@ export default function BookingGrid() {
     </div>
   );
 
-  // Desktop: Table view
+  // Desktop: Elegant table view
   const DesktopView = () => (
-    <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div className="hidden md:block card-elevated overflow-hidden animate-fade-in">
       <div className="overflow-x-auto">
         <table className="w-full border-collapse min-w-max">
           <thead>
-            <tr className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white">
-              <th className="p-4 text-left font-semibold sticky left-0 bg-gradient-to-r from-emerald-600 to-emerald-600 z-10 min-w-[100px]">
-                {language === "de" ? "Zeit" : "Time"}
+            <tr
+              style={{
+                background: 'linear-gradient(135deg, var(--forest-700) 0%, var(--forest-800) 100%)',
+              }}
+            >
+              <th className="p-4 text-left font-semibold text-white sticky left-0 z-10 min-w-[100px]" style={{ background: 'var(--forest-700)' }}>
+                <span className="font-serif">{language === "de" ? "Zeit" : "Time"}</span>
               </th>
-              {data.dates.map((date) => (
+              {data.dates.map((date, idx) => (
                 <th
                   key={date}
-                  className={`p-4 font-semibold text-center min-w-[130px] ${
-                    !isBookable(date) ? "bg-emerald-800/30" : ""
+                  className={`p-4 font-medium text-center min-w-[140px] text-white ${
+                    !isBookable(date) ? "bg-black/10" : ""
                   }`}
                 >
-                  <div>{formatDate(date)}</div>
+                  <div className="font-serif">{formatDate(date)}</div>
                   {!isBookable(date) && (
-                    <div className="text-xs font-normal text-emerald-200 mt-0.5">{t.booking.viewOnly}</div>
+                    <div className="text-[10px] font-normal text-[var(--terracotta-300)] mt-1 uppercase tracking-wide">
+                      {t.booking.viewOnly}
+                    </div>
                   )}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {HOURS.map((hour, idx) => (
-              <tr key={hour} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50/50"}>
-                <td className="p-3 font-medium text-gray-600 border-r border-gray-100 sticky left-0 bg-inherit z-10">
+            {HOURS.map((hour, hourIdx) => (
+              <tr
+                key={hour}
+                className="border-b border-[var(--stone-100)] last:border-b-0 opacity-0 animate-slide-up"
+                style={{
+                  animationDelay: `${hourIdx * 20}ms`,
+                  animationFillMode: 'forwards',
+                  background: hourIdx % 2 === 0 ? 'white' : 'var(--cream-50)',
+                }}
+              >
+                <td
+                  className="p-3 font-semibold text-[var(--stone-700)] border-r border-[var(--stone-100)] sticky left-0 z-10"
+                  style={{ background: hourIdx % 2 === 0 ? 'white' : 'var(--cream-50)' }}
+                >
                   {formatHour(hour)}
                 </td>
 
@@ -366,29 +429,29 @@ export default function BookingGrid() {
                   return (
                     <td
                       key={key}
-                      className={`p-2 border-r border-gray-100 last:border-r-0 ${
-                        !canBook ? "bg-gray-50" : ""
+                      className={`p-2 border-r border-[var(--stone-100)] last:border-r-0 ${
+                        !canBook ? "bg-[var(--cream-100)]" : ""
                       }`}
                     >
                       {booking ? (
-                        <div
-                          className={`rounded-lg p-2.5 text-sm ${
-                            isMyBooking
-                              ? "bg-emerald-50 border border-emerald-200"
-                              : "bg-gray-100 border border-gray-200"
-                          }`}
-                        >
-                          <div className={`font-medium ${isMyBooking ? "text-emerald-700" : "text-gray-600"}`}>
+                        <div className={`rounded-lg p-3 text-sm ${isMyBooking ? "slot-mine" : "slot-booked"}`}>
+                          <div className={`font-medium ${isMyBooking ? "text-white" : "text-[var(--stone-600)]"}`}>
                             {isMyBooking ? t.booking.yourBooking : `${booking.first_name} ${booking.last_name}`}
                             {booking.partner_first_name && (
-                              <span className="text-xs text-gray-400 font-normal block"> {t.booking.with} {booking.partner_first_name}</span>
+                              <span className={`text-xs block mt-0.5 font-normal ${isMyBooking ? "text-white/70" : "text-[var(--stone-400)]"}`}>
+                                {t.booking.with} {booking.partner_first_name}
+                              </span>
                             )}
                           </div>
                           {(isMyBooking || data?.isAdmin) && canBook && (
                             <button
                               onClick={() => handleCancel(booking.id)}
                               disabled={isLoading}
-                              className="mt-1 text-xs text-red-500 hover:text-red-600 font-medium disabled:opacity-50"
+                              className={`mt-2 text-xs font-medium px-2 py-1 rounded-md transition-all disabled:opacity-50 ${
+                                isMyBooking
+                                  ? "text-white/80 hover:bg-white/10"
+                                  : "text-red-500 hover:bg-red-50"
+                              }`}
                             >
                               {isLoading ? t.booking.canceling : t.booking.cancel}
                             </button>
@@ -398,16 +461,19 @@ export default function BookingGrid() {
                         <button
                           onClick={() => openBookingDialog(date, hour)}
                           disabled={isLoading}
-                          className="w-full h-full min-h-[44px] bg-emerald-50 hover:bg-emerald-100 text-emerald-600 hover:text-emerald-700 rounded-lg transition disabled:opacity-50 text-sm font-medium border border-emerald-200 hover:border-emerald-300"
+                          className="w-full h-full min-h-[52px] slot-available rounded-lg text-sm font-medium disabled:opacity-50"
                         >
                           {isLoading ? (
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-emerald-600 mx-auto"></div>
+                            <div
+                              className="w-4 h-4 rounded-full animate-spin mx-auto"
+                              style={{ border: '2px solid var(--forest-200)', borderTopColor: 'var(--forest-600)' }}
+                            />
                           ) : (
                             t.booking.book
                           )}
                         </button>
                       ) : (
-                        <div className="w-full h-full min-h-[44px] bg-gray-50 text-gray-300 rounded-lg flex items-center justify-center text-sm border border-dashed border-gray-200">
+                        <div className="w-full h-full min-h-[52px] slot-unavailable rounded-lg flex items-center justify-center text-sm">
                           —
                         </div>
                       )}
@@ -445,18 +511,24 @@ export default function BookingGrid() {
       <DesktopView />
 
       {/* Legend */}
-      <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-500">
+      <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-sm">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
-          <span>{t.legend.yourBooking}</span>
+          <div
+            className="w-4 h-4 rounded-md"
+            style={{ background: 'linear-gradient(135deg, var(--terracotta-300) 0%, var(--terracotta-400) 100%)' }}
+          />
+          <span className="text-[var(--stone-600)]">{t.legend.yourBooking}</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-gray-400"></div>
-          <span>{t.legend.booked}</span>
+          <div className="w-4 h-4 rounded-md bg-[var(--stone-200)]" />
+          <span className="text-[var(--stone-600)]">{t.legend.booked}</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded border-2 border-emerald-300 bg-emerald-50"></div>
-          <span>{t.legend.available}</span>
+          <div
+            className="w-4 h-4 rounded-md"
+            style={{ background: 'var(--forest-100)', border: '1.5px solid var(--forest-200)' }}
+          />
+          <span className="text-[var(--stone-600)]">{t.legend.available}</span>
         </div>
       </div>
     </div>

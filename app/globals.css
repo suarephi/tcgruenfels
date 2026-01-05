@@ -1,5 +1,367 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* Core Palette - Alpine Forest */
+  --forest-900: #1a2f23;
+  --forest-800: #243d2e;
+  --forest-700: #2d4a38;
+  --forest-600: #3a5f48;
+  --forest-500: #4a7a5c;
+  --forest-400: #6b9b7d;
+  --forest-300: #94bba3;
+  --forest-200: #c3dbc9;
+  --forest-100: #e8f2ea;
+  --forest-50: #f4f9f5;
+
+  /* Warm Cream */
+  --cream-50: #fefdfb;
+  --cream-100: #faf8f3;
+  --cream-200: #f5f1e8;
+  --cream-300: #ebe5d6;
+  --cream-400: #ddd4c0;
+
+  /* Terracotta Accent */
+  --terracotta-600: #c25d3a;
+  --terracotta-500: #d4714d;
+  --terracotta-400: #e08b67;
+  --terracotta-300: #ecab8d;
+
+  /* Court Surface */
+  --clay: #cc6b49;
+  --court-line: rgba(255, 255, 255, 0.9);
+
+  /* Neutrals */
+  --stone-900: #1c1c1a;
+  --stone-800: #2d2d2a;
+  --stone-700: #3d3d39;
+  --stone-600: #525250;
+  --stone-500: #71716e;
+  --stone-400: #9c9c98;
+  --stone-300: #c4c4c0;
+  --stone-200: #e2e2df;
+  --stone-100: #f0f0ed;
+  --stone-50: #f8f8f6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
 
 body {
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: 'Outfit', -apple-system, sans-serif;
+  background-color: var(--cream-100);
+  color: var(--stone-800);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Elegant Serif for Headings */
+.font-serif {
+  font-family: 'Fraunces', Georgia, serif;
+  font-optical-sizing: auto;
+}
+
+h1, h2, h3 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+/* Court Pattern Background */
+.court-pattern {
+  background-color: var(--forest-700);
+  background-image:
+    linear-gradient(135deg, transparent 45%, rgba(255,255,255,0.03) 45%, rgba(255,255,255,0.03) 55%, transparent 55%),
+    linear-gradient(45deg, transparent 45%, rgba(255,255,255,0.03) 45%, rgba(255,255,255,0.03) 55%, transparent 55%);
+  background-size: 20px 20px;
+}
+
+/* Noise Texture Overlay */
+.texture-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+
+/* Elegant Card Style */
+.card-elevated {
+  background: white;
+  border-radius: 16px;
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.04),
+    0 4px 16px rgba(0,0,0,0.04),
+    0 12px 32px rgba(0,0,0,0.02);
+  border: 1px solid var(--stone-100);
+}
+
+/* Premium Button */
+.btn-primary {
+  background: linear-gradient(180deg, var(--forest-600) 0%, var(--forest-700) 100%);
+  color: white;
+  font-weight: 500;
+  padding: 0.75rem 1.5rem;
+  border-radius: 10px;
+  border: none;
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.1),
+    0 2px 4px rgba(0,0,0,0.05),
+    inset 0 1px 0 rgba(255,255,255,0.1);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(180deg, var(--forest-500) 0%, var(--forest-600) 100%);
+  box-shadow:
+    0 2px 4px rgba(0,0,0,0.15),
+    0 4px 8px rgba(0,0,0,0.1),
+    inset 0 1px 0 rgba(255,255,255,0.15);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Secondary Button */
+.btn-secondary {
+  background: white;
+  color: var(--stone-700);
+  font-weight: 500;
+  padding: 0.75rem 1.5rem;
+  border-radius: 10px;
+  border: 1px solid var(--stone-200);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: var(--stone-50);
+  border-color: var(--stone-300);
+}
+
+/* Elegant Input */
+.input-field {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  background: white;
+  border: 1.5px solid var(--stone-200);
+  border-radius: 10px;
+  font-size: 1rem;
+  color: var(--stone-800);
+  transition: all 0.2s ease;
+}
+
+.input-field::placeholder {
+  color: var(--stone-400);
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: var(--forest-500);
+  box-shadow: 0 0 0 3px rgba(74, 122, 92, 0.1);
+}
+
+/* Slot States */
+.slot-available {
+  background: linear-gradient(180deg, var(--forest-50) 0%, var(--forest-100) 100%);
+  border: 1.5px solid var(--forest-200);
+  color: var(--forest-700);
+  transition: all 0.2s ease;
+}
+
+.slot-available:hover {
+  background: linear-gradient(180deg, var(--forest-100) 0%, var(--forest-200) 100%);
+  border-color: var(--forest-300);
+  transform: scale(1.02);
+  box-shadow: 0 2px 8px rgba(74, 122, 92, 0.15);
+}
+
+.slot-booked {
+  background: var(--stone-50);
+  border: 1.5px solid var(--stone-200);
+  color: var(--stone-500);
+}
+
+.slot-mine {
+  background: linear-gradient(135deg, var(--terracotta-300) 0%, var(--terracotta-400) 100%);
+  border: 1.5px solid var(--terracotta-500);
+  color: white;
+}
+
+.slot-unavailable {
+  background: var(--cream-200);
+  border: 1.5px dashed var(--stone-200);
+  color: var(--stone-400);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.5s ease-out forwards;
+}
+
+.animate-slide-down {
+  animation: slideDown 0.4s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s ease-out forwards;
+}
+
+/* Staggered animations */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
+
+/* Loading skeleton shimmer */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--stone-100) 25%,
+    var(--stone-50) 50%,
+    var(--stone-100) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--cream-100);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--stone-300);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--stone-400);
+}
+
+/* Selection */
+::selection {
+  background: var(--forest-200);
+  color: var(--forest-900);
+}
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid var(--forest-500);
+  outline-offset: 2px;
+}
+
+/* Hide scrollbar for horizontal scroll */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Backdrop blur support */
+@supports (backdrop-filter: blur(12px)) {
+  .backdrop-blur-nav {
+    backdrop-filter: blur(12px) saturate(180%);
+    background-color: rgba(250, 248, 243, 0.85);
+  }
+}
+
+/* Tennis ball decorative element */
+.tennis-ball {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 30%, #d4e157 0%, #c0ca33 50%, #9e9d24 100%);
+  box-shadow:
+    inset -3px -3px 6px rgba(0,0,0,0.2),
+    inset 2px 2px 4px rgba(255,255,255,0.3);
+  position: relative;
+}
+
+.tennis-ball::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.6);
+  border-top-color: transparent;
+  border-bottom-color: transparent;
+  transform: rotate(45deg);
 }

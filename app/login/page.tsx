@@ -42,42 +42,56 @@ export default function LoginPage() {
         <Toast message={error} type="error" onClose={() => setError("")} />
       )}
 
-      <div className="w-full max-w-sm">
+      <div className="w-full max-w-sm animate-slide-up">
+        {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5"
+            style={{
+              background: 'linear-gradient(135deg, var(--forest-600) 0%, var(--forest-700) 100%)',
+              boxShadow: '0 4px 20px rgba(45, 74, 56, 0.25)',
+            }}
+          >
+            {/* Tennis racket icon */}
+            <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <ellipse cx="10" cy="8" rx="6" ry="7" />
+              <line x1="10" y1="1" x2="10" y2="15" />
+              <line x1="4" y1="8" x2="16" y2="8" />
+              <line x1="5.5" y1="4" x2="14.5" y2="12" />
+              <line x1="5.5" y1="12" x2="14.5" y2="4" />
+              <line x1="10" y1="15" x2="18" y2="23" strokeWidth="2.5" strokeLinecap="round" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">{t.login.title}</h1>
-          <p className="text-gray-500 mt-1">{t.login.subtitle}</p>
+          <h1 className="font-serif text-3xl text-[var(--stone-900)]">{t.login.title}</h1>
+          <p className="text-[var(--stone-500)] mt-2">{t.login.subtitle}</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Form Card */}
+        <div className="card-elevated p-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-medium text-[var(--stone-700)] mb-2">
                 {t.login.email}
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition text-gray-900"
+                className="input-field"
                 placeholder={t.login.emailPlaceholder}
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-medium text-[var(--stone-700)] mb-2">
                 {t.login.password}
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition text-gray-900"
+                className="input-field"
                 placeholder={t.login.passwordPlaceholder}
                 required
               />
@@ -86,26 +100,44 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-2.5 rounded-lg font-medium transition disabled:opacity-50 shadow-sm"
+              className="btn-primary w-full flex items-center justify-center gap-2"
             >
               {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <>
+                  <div
+                    className="w-4 h-4 rounded-full animate-spin"
+                    style={{ border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white' }}
+                  />
                   {t.login.submitting}
-                </span>
+                </>
               ) : (
-                t.login.submit
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                  </svg>
+                  {t.login.submit}
+                </>
               )}
             </button>
           </form>
         </div>
 
-        <p className="mt-6 text-center text-sm text-gray-500">
+        {/* Footer Link */}
+        <p className="mt-8 text-center text-sm text-[var(--stone-500)]">
           {t.login.noAccount}{" "}
-          <Link href="/register" className="text-emerald-600 hover:text-emerald-700 font-medium">
+          <Link
+            href="/register"
+            className="font-medium transition-colors"
+            style={{ color: 'var(--forest-600)' }}
+          >
             {t.login.createOne}
           </Link>
         </p>
+
+        {/* Decorative element */}
+        <div className="mt-12 flex justify-center">
+          <div className="tennis-ball opacity-50" />
+        </div>
       </div>
     </div>
   );
