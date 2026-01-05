@@ -44,7 +44,9 @@ export async function GET(request: NextRequest) {
 
   const startDate = getSwissDate(0);
   const endDate = getSwissDate(VIEW_DAYS - 1);
+  console.log("Fetching bookings from", startDate, "to", endDate);
   const bookings = await getBookingsForDateRange(startDate, endDate);
+  console.log("Found", bookings.length, "bookings");
 
   // Generate array of dates to display
   const dates = Array.from({ length: VIEW_DAYS }, (_, i) => getSwissDate(i));

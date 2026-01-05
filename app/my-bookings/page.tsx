@@ -39,18 +39,26 @@ export default function MyBookingsPage() {
       return;
     }
 
-    const { data } = await supabase
+    // Debug: log the date being used for filtering
+    const todayDate = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Zurich" });
+    console.log("Filtering bookings from date:", todayDate, "for user:", user.id);
+
+    const { data, error } = await supabase
       .from("bookings")
       .select(`
         id,
         date,
         hour,
+        partner_id,
         partner:profiles!bookings_partner_id_fkey(first_name, last_name)
       `)
       .eq("user_id", user.id)
-      .gte("date", new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Zurich" }))
       .order("date", { ascending: true })
       .order("hour", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching my bookings:", error);
+    }
 
     if (data) {
       setBookings(data.map((b: any) => ({
