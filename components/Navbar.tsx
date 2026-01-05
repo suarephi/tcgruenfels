@@ -76,19 +76,12 @@ export default function Navbar() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link href="/book" className="flex items-center gap-3 group">
-            <div className="relative">
-              <img
-                src="https://static.wixstatic.com/media/4a3b62_9c37ebacfa734ca9a8c3f2f66666b015~mv2.png/v1/fill/w_168,h_128,al_c,lg_1,q_85,enc_avif,quality_auto/4a3b62_9c37ebacfa734ca9a8c3f2f66666b015~mv2.png"
-                alt="TC Grünfels"
-                className="h-10 w-auto transition-transform group-hover:scale-105"
-              />
-            </div>
-            <div className="hidden sm:block">
-              <span className="font-serif text-xl text-[var(--stone-900)] tracking-tight">
-                {t.nav.title}
-              </span>
-            </div>
+          <Link href="/book" className="flex items-center gap-2 group">
+            <img
+              src="/logo.png"
+              alt="TC Grünfels"
+              className="h-12 w-auto transition-transform group-hover:scale-105"
+            />
           </Link>
 
           {/* Desktop Navigation */}
