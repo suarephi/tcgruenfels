@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Toast from "./Toast";
 import BookingDialog from "./BookingDialog";
+import EditBookingDialog from "./EditBookingDialog";
 import { useLanguage } from "@/lib/LanguageContext";
 
 interface Booking {
@@ -12,6 +13,7 @@ interface Booking {
   hour: number;
   first_name: string;
   last_name: string;
+  partner_id?: string | null;
   partner_first_name?: string;
   partner_last_name?: string;
 }
@@ -20,6 +22,15 @@ interface BookingDialogState {
   isOpen: boolean;
   date: string;
   hour: number;
+}
+
+interface EditDialogState {
+  isOpen: boolean;
+  bookingId: number;
+  date: string;
+  hour: number;
+  partnerId: string | null;
+  partnerName: string | null;
 }
 
 interface BookingData {
@@ -52,6 +63,14 @@ export default function BookingGrid() {
     isOpen: false,
     date: "",
     hour: 0,
+  });
+  const [editDialog, setEditDialog] = useState<EditDialogState>({
+    isOpen: false,
+    bookingId: 0,
+    date: "",
+    hour: 0,
+    partnerId: null,
+    partnerName: null,
   });
 
   const formatDate = useCallback((dateStr: string): string => {
@@ -116,6 +135,30 @@ export default function BookingGrid() {
     setDialog({ isOpen: false, date: "", hour: 0 });
   };
 
+  const openEditDialog = (booking: Booking) => {
+    setEditDialog({
+      isOpen: true,
+      bookingId: booking.id,
+      date: booking.date,
+      hour: booking.hour,
+      partnerId: booking.partner_id || null,
+      partnerName: booking.partner_first_name
+        ? `${booking.partner_first_name} ${booking.partner_last_name || ""}`.trim()
+        : null,
+    });
+  };
+
+  const closeEditDialog = () => {
+    setEditDialog({
+      isOpen: false,
+      bookingId: 0,
+      date: "",
+      hour: 0,
+      partnerId: null,
+      partnerName: null,
+    });
+  };
+
   const handleBook = async (partnerId: string | null) => {
     const { date, hour } = dialog;
     const key = `${date}-${hour}`;
@@ -162,6 +205,31 @@ export default function BookingGrid() {
       showToast(t.toast.somethingWrong, "error");
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  const handleEdit = async (bookingId: number, partnerId: string | null) => {
+    setActionLoading(`edit-${bookingId}`);
+
+    try {
+      const res = await fetch(`/api/bookings/${bookingId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ partnerId }),
+      });
+
+      if (!res.ok) {
+        const json = await res.json();
+        showToast(json.error || t.toast.editFailed, "error");
+      } else {
+        showToast(t.toast.editSuccess, "success");
+        await fetchBookings();
+      }
+    } catch {
+      showToast(t.toast.somethingWrong, "error");
+    } finally {
+      setActionLoading(null);
+      closeEditDialog();
     }
   };
 
@@ -293,7 +361,7 @@ export default function BookingGrid() {
           const booking = getBooking(selectedDate, hour);
           const isMyBooking = booking && booking.user_id === data.currentUserId;
           const key = `${selectedDate}-${hour}`;
-          const isLoading = actionLoading === key || actionLoading === `cancel-${booking?.id}`;
+          const isLoading = actionLoading === key || actionLoading === `cancel-${booking?.id}` || actionLoading === `edit-${booking?.id}`;
 
           return (
             <div
@@ -326,17 +394,28 @@ export default function BookingGrid() {
                       </span>
                     </div>
                     {(isMyBooking || data?.isAdmin) && canBookSelectedDate && (
-                      <button
-                        onClick={() => handleCancel(booking.id)}
-                        disabled={isLoading}
-                        className={`text-xs font-medium px-2 py-1 rounded-lg transition-all disabled:opacity-50 ${
-                          isMyBooking
-                            ? "text-white/80 hover:bg-white/10"
-                            : "text-red-500 hover:bg-red-50"
-                        }`}
-                      >
-                        {isLoading ? "..." : t.booking.cancel}
-                      </button>
+                      <div className="flex items-center gap-1">
+                        {isMyBooking && (
+                          <button
+                            onClick={() => openEditDialog(booking)}
+                            disabled={isLoading}
+                            className="text-xs font-medium px-2 py-1 rounded-lg transition-all disabled:opacity-50 text-white/80 hover:bg-white/10"
+                          >
+                            {t.booking.edit}
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleCancel(booking.id)}
+                          disabled={isLoading}
+                          className={`text-xs font-medium px-2 py-1 rounded-lg transition-all disabled:opacity-50 ${
+                            isMyBooking
+                              ? "text-white/80 hover:bg-white/10"
+                              : "text-red-500 hover:bg-red-50"
+                          }`}
+                        >
+                          {isLoading ? "..." : t.booking.cancel}
+                        </button>
+                      </div>
                     )}
                   </div>
                 ) : canBookSelectedDate ? (
@@ -423,7 +502,7 @@ export default function BookingGrid() {
                   const booking = getBooking(date, hour);
                   const isMyBooking = booking && booking.user_id === data.currentUserId;
                   const key = `${date}-${hour}`;
-                  const isLoading = actionLoading === key || actionLoading === `cancel-${booking?.id}`;
+                  const isLoading = actionLoading === key || actionLoading === `cancel-${booking?.id}` || actionLoading === `edit-${booking?.id}`;
                   const canBook = isBookable(date);
 
                   return (
@@ -444,17 +523,28 @@ export default function BookingGrid() {
                             )}
                           </div>
                           {(isMyBooking || data?.isAdmin) && canBook && (
-                            <button
-                              onClick={() => handleCancel(booking.id)}
-                              disabled={isLoading}
-                              className={`mt-2 text-xs font-medium px-2 py-1 rounded-md transition-all disabled:opacity-50 ${
-                                isMyBooking
-                                  ? "text-white/80 hover:bg-white/10"
-                                  : "text-red-500 hover:bg-red-50"
-                              }`}
-                            >
-                              {isLoading ? t.booking.canceling : t.booking.cancel}
-                            </button>
+                            <div className="mt-2 flex items-center gap-1">
+                              {isMyBooking && (
+                                <button
+                                  onClick={() => openEditDialog(booking)}
+                                  disabled={isLoading}
+                                  className="text-xs font-medium px-2 py-1 rounded-md transition-all disabled:opacity-50 text-white/80 hover:bg-white/10"
+                                >
+                                  {t.booking.edit}
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleCancel(booking.id)}
+                                disabled={isLoading}
+                                className={`text-xs font-medium px-2 py-1 rounded-md transition-all disabled:opacity-50 ${
+                                  isMyBooking
+                                    ? "text-white/80 hover:bg-white/10"
+                                    : "text-red-500 hover:bg-red-50"
+                                }`}
+                              >
+                                {isLoading ? t.booking.canceling : t.booking.cancel}
+                              </button>
+                            </div>
                           )}
                         </div>
                       ) : canBook ? (
@@ -505,6 +595,18 @@ export default function BookingGrid() {
         onConfirm={handleBook}
         onCancel={closeBookingDialog}
         loading={actionLoading === `${dialog.date}-${dialog.hour}`}
+      />
+
+      <EditBookingDialog
+        isOpen={editDialog.isOpen}
+        bookingId={editDialog.bookingId}
+        date={editDialog.date}
+        hour={editDialog.hour}
+        currentPartnerId={editDialog.partnerId}
+        currentPartnerName={editDialog.partnerName}
+        onConfirm={handleEdit}
+        onCancel={closeEditDialog}
+        loading={actionLoading === `edit-${editDialog.bookingId}`}
       />
 
       <MobileView />

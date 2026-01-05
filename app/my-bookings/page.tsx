@@ -6,11 +6,13 @@ import Link from "next/link";
 import { useLanguage } from "@/lib/LanguageContext";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import Toast from "@/components/Toast";
+import EditBookingDialog from "@/components/EditBookingDialog";
 
 interface Booking {
   id: number;
   date: string;
   hour: number;
+  partner_id?: string | null;
   partner_first_name?: string;
   partner_last_name?: string;
 }
@@ -21,7 +23,12 @@ export default function MyBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancelLoading, setCancelLoading] = useState<number | null>(null);
+  const [editLoading, setEditLoading] = useState<number | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [editDialog, setEditDialog] = useState<{
+    isOpen: boolean;
+    booking: Booking | null;
+  }>({ isOpen: false, booking: null });
   const supabase = createBrowserSupabaseClient();
 
   const fetchBookings = useCallback(async () => {
@@ -41,7 +48,7 @@ export default function MyBookingsPage() {
         partner:profiles!bookings_partner_id_fkey(first_name, last_name)
       `)
       .eq("user_id", user.id)
-      .gte("date", new Date().toISOString().split("T")[0])
+      .gte("date", new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Zurich" }))
       .order("date", { ascending: true })
       .order("hour", { ascending: true });
 
@@ -50,6 +57,7 @@ export default function MyBookingsPage() {
         id: b.id,
         date: b.date,
         hour: b.hour,
+        partner_id: b.partner_id,
         partner_first_name: b.partner?.first_name,
         partner_last_name: b.partner?.last_name,
       })));
@@ -82,6 +90,38 @@ export default function MyBookingsPage() {
     }
   };
 
+  const handleEdit = async (bookingId: number, partnerId: string | null) => {
+    setEditLoading(bookingId);
+
+    try {
+      const res = await fetch(`/api/bookings/${bookingId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ partnerId }),
+      });
+
+      if (!res.ok) {
+        setToast({ message: t.toast.editFailed, type: "error" });
+      } else {
+        setToast({ message: t.toast.editSuccess, type: "success" });
+        await fetchBookings();
+      }
+    } catch {
+      setToast({ message: t.toast.somethingWrong, type: "error" });
+    } finally {
+      setEditLoading(null);
+      setEditDialog({ isOpen: false, booking: null });
+    }
+  };
+
+  const openEditDialog = (booking: Booking) => {
+    setEditDialog({ isOpen: true, booking });
+  };
+
+  const closeEditDialog = () => {
+    setEditDialog({ isOpen: false, booking: null });
+  };
+
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr + "T12:00:00");
     return date.toLocaleDateString(language === "de" ? "de-DE" : "en-US", {
@@ -97,7 +137,7 @@ export default function MyBookingsPage() {
   };
 
   const isToday = (dateStr: string) => {
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Zurich" });
     return dateStr === today;
   };
 
@@ -124,6 +164,24 @@ export default function MyBookingsPage() {
           message={toast.message}
           type={toast.type}
           onClose={() => setToast(null)}
+        />
+      )}
+
+      {editDialog.booking && (
+        <EditBookingDialog
+          isOpen={editDialog.isOpen}
+          bookingId={editDialog.booking.id}
+          date={editDialog.booking.date}
+          hour={editDialog.booking.hour}
+          currentPartnerId={editDialog.booking.partner_id || null}
+          currentPartnerName={
+            editDialog.booking.partner_first_name
+              ? `${editDialog.booking.partner_first_name} ${editDialog.booking.partner_last_name || ""}`.trim()
+              : null
+          }
+          onConfirm={handleEdit}
+          onCancel={closeEditDialog}
+          loading={editLoading === editDialog.booking.id}
         />
       )}
 
@@ -214,14 +272,24 @@ export default function MyBookingsPage() {
                     )}
                   </div>
                 </div>
-                <button
-                  onClick={() => handleCancel(booking.id)}
-                  disabled={cancelLoading === booking.id}
-                  className="text-sm font-medium px-3 py-1.5 rounded-lg transition-all disabled:opacity-50 hover:bg-red-50"
-                  style={{ color: '#dc2626' }}
-                >
-                  {cancelLoading === booking.id ? "..." : t.booking.cancel}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => openEditDialog(booking)}
+                    disabled={cancelLoading === booking.id || editLoading === booking.id}
+                    className="text-sm font-medium px-3 py-1.5 rounded-lg transition-all disabled:opacity-50 hover:bg-[var(--forest-50)]"
+                    style={{ color: 'var(--forest-600)' }}
+                  >
+                    {t.booking.edit}
+                  </button>
+                  <button
+                    onClick={() => handleCancel(booking.id)}
+                    disabled={cancelLoading === booking.id || editLoading === booking.id}
+                    className="text-sm font-medium px-3 py-1.5 rounded-lg transition-all disabled:opacity-50 hover:bg-red-50"
+                    style={{ color: '#dc2626' }}
+                  >
+                    {cancelLoading === booking.id ? "..." : t.booking.cancel}
+                  </button>
+                </div>
               </div>
             </div>
           ))}

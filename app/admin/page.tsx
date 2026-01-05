@@ -16,6 +16,14 @@ interface User {
   bookingCount: number;
 }
 
+interface Settings {
+  bookingWindowDays: number;
+  viewWindowDays: number;
+  startHour: number;
+  endHour: number;
+  maxBookingsPerDay: number;
+}
+
 interface ToastState {
   message: string;
   type: "error" | "success";
@@ -30,6 +38,15 @@ export default function AdminPage() {
   const [toast, setToast] = useState<ToastState | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"users" | "settings">("users");
+  const [settings, setSettings] = useState<Settings>({
+    bookingWindowDays: 3,
+    viewWindowDays: 14,
+    startHour: 6,
+    endHour: 22,
+    maxBookingsPerDay: 1,
+  });
+  const [settingsLoading, setSettingsLoading] = useState(false);
   const supabase = createBrowserSupabaseClient();
 
   const fetchUsers = useCallback(async () => {
@@ -48,6 +65,40 @@ export default function AdminPage() {
       setLoading(false);
     }
   }, [router, t.toast.somethingWrong]);
+
+  const fetchSettings = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/settings");
+      if (res.ok) {
+        const data = await res.json();
+        setSettings(data);
+      }
+    } catch {
+      // Use defaults if settings can't be fetched
+    }
+  }, []);
+
+  const handleSaveSettings = async () => {
+    setSettingsLoading(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setToast({ message: data.error || t.admin.settingsFailed, type: "error" });
+      } else {
+        setToast({ message: t.admin.settingsSaved, type: "success" });
+      }
+    } catch {
+      setToast({ message: t.admin.settingsFailed, type: "error" });
+    } finally {
+      setSettingsLoading(false);
+    }
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -71,10 +122,11 @@ export default function AdminPage() {
 
       setCurrentUserId(user.id);
       fetchUsers();
+      fetchSettings();
     };
 
     checkAuth();
-  }, [supabase, router, fetchUsers]);
+  }, [supabase, router, fetchUsers, fetchSettings]);
 
   const handleToggleAdmin = async (userId: string, makeAdmin: boolean) => {
     setActionLoading(userId);
@@ -239,29 +291,55 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 animate-slide-up stagger-1">
-        <div className="card-elevated p-4">
-          <div className="text-2xl font-serif text-[var(--stone-900)]">{users.length}</div>
-          <div className="text-sm text-[var(--stone-500)]">{t.admin.users}</div>
-        </div>
-        <div className="card-elevated p-4">
-          <div className="text-2xl font-serif text-[var(--terracotta-500)]">{adminCount}</div>
-          <div className="text-sm text-[var(--stone-500)]">{language === "de" ? "Admins" : "Admins"}</div>
-        </div>
-        <div className="card-elevated p-4">
-          <div className="text-2xl font-serif text-[var(--forest-600)]">{memberCount}</div>
-          <div className="text-sm text-[var(--stone-500)]">{language === "de" ? "Mitglieder" : "Members"}</div>
-        </div>
-        <div className="card-elevated p-4">
-          <div className="text-2xl font-serif text-[var(--stone-900)]">
-            {users.reduce((sum, u) => sum + u.bookingCount, 0)}
-          </div>
-          <div className="text-sm text-[var(--stone-500)]">{t.admin.bookings}</div>
-        </div>
+      {/* Tabs */}
+      <div className="flex gap-2 mb-8 animate-slide-up">
+        <button
+          onClick={() => setActiveTab("users")}
+          className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+            activeTab === "users"
+              ? "bg-[var(--forest-600)] text-white"
+              : "bg-[var(--cream-200)] text-[var(--stone-600)] hover:bg-[var(--cream-300)]"
+          }`}
+        >
+          {t.admin.users}
+        </button>
+        <button
+          onClick={() => setActiveTab("settings")}
+          className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+            activeTab === "settings"
+              ? "bg-[var(--forest-600)] text-white"
+              : "bg-[var(--cream-200)] text-[var(--stone-600)] hover:bg-[var(--cream-300)]"
+          }`}
+        >
+          {t.admin.settings}
+        </button>
       </div>
 
-      {/* Users Table */}
+      {activeTab === "users" && (
+        <>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 animate-slide-up stagger-1">
+            <div className="card-elevated p-4">
+              <div className="text-2xl font-serif text-[var(--stone-900)]">{users.length}</div>
+              <div className="text-sm text-[var(--stone-500)]">{t.admin.users}</div>
+            </div>
+            <div className="card-elevated p-4">
+              <div className="text-2xl font-serif text-[var(--terracotta-500)]">{adminCount}</div>
+              <div className="text-sm text-[var(--stone-500)]">{language === "de" ? "Admins" : "Admins"}</div>
+            </div>
+            <div className="card-elevated p-4">
+              <div className="text-2xl font-serif text-[var(--forest-600)]">{memberCount}</div>
+              <div className="text-sm text-[var(--stone-500)]">{language === "de" ? "Mitglieder" : "Members"}</div>
+            </div>
+            <div className="card-elevated p-4">
+              <div className="text-2xl font-serif text-[var(--stone-900)]">
+                {users.reduce((sum, u) => sum + u.bookingCount, 0)}
+              </div>
+              <div className="text-sm text-[var(--stone-500)]">{t.admin.bookings}</div>
+            </div>
+          </div>
+
+          {/* Users Table */}
       <div className="card-elevated overflow-hidden animate-slide-up stagger-2">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -391,6 +469,143 @@ export default function AdminPage() {
           </table>
         </div>
       </div>
+        </>
+      )}
+
+      {activeTab === "settings" && (
+        <div className="card-elevated p-6 animate-slide-up">
+          <div className="mb-6">
+            <h2 className="font-serif text-xl text-[var(--stone-900)]">{t.admin.settings}</h2>
+            <p className="text-sm text-[var(--stone-500)] mt-1">{t.admin.settingsSubtitle}</p>
+          </div>
+
+          <div className="space-y-6">
+            {/* Booking Window */}
+            <div className="grid sm:grid-cols-2 gap-4 items-start">
+              <div>
+                <label className="block text-sm font-medium text-[var(--stone-700)] mb-1">
+                  {t.admin.bookingWindow}
+                </label>
+                <p className="text-xs text-[var(--stone-500)]">{t.admin.bookingWindowDesc}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="1"
+                  max="30"
+                  value={settings.bookingWindowDays}
+                  onChange={(e) => setSettings({ ...settings, bookingWindowDays: parseInt(e.target.value) || 1 })}
+                  className="input-field w-20 text-center"
+                />
+                <span className="text-sm text-[var(--stone-500)]">{t.admin.days}</span>
+              </div>
+            </div>
+
+            {/* View Window */}
+            <div className="grid sm:grid-cols-2 gap-4 items-start">
+              <div>
+                <label className="block text-sm font-medium text-[var(--stone-700)] mb-1">
+                  {t.admin.viewWindow}
+                </label>
+                <p className="text-xs text-[var(--stone-500)]">{t.admin.viewWindowDesc}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={settings.bookingWindowDays}
+                  max="60"
+                  value={settings.viewWindowDays}
+                  onChange={(e) => setSettings({ ...settings, viewWindowDays: parseInt(e.target.value) || settings.bookingWindowDays })}
+                  className="input-field w-20 text-center"
+                />
+                <span className="text-sm text-[var(--stone-500)]">{t.admin.days}</span>
+              </div>
+            </div>
+
+            {/* Operating Hours */}
+            <div className="grid sm:grid-cols-2 gap-4 items-start">
+              <div>
+                <label className="block text-sm font-medium text-[var(--stone-700)] mb-1">
+                  {t.admin.operatingHours}
+                </label>
+                <p className="text-xs text-[var(--stone-500)]">{t.admin.operatingHoursDesc}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-[var(--stone-500)]">{t.admin.startHour}</span>
+                  <select
+                    value={settings.startHour}
+                    onChange={(e) => setSettings({ ...settings, startHour: parseInt(e.target.value) })}
+                    className="input-field w-20 text-center"
+                  >
+                    {Array.from({ length: 24 }, (_, i) => (
+                      <option key={i} value={i}>{i.toString().padStart(2, "0")}:00</option>
+                    ))}
+                  </select>
+                </div>
+                <span className="text-[var(--stone-400)]">-</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-[var(--stone-500)]">{t.admin.endHour}</span>
+                  <select
+                    value={settings.endHour}
+                    onChange={(e) => setSettings({ ...settings, endHour: parseInt(e.target.value) })}
+                    className="input-field w-20 text-center"
+                  >
+                    {Array.from({ length: 24 }, (_, i) => i + 1).map((h) => (
+                      <option key={h} value={h}>{h.toString().padStart(2, "0")}:00</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Max Bookings Per Day */}
+            <div className="grid sm:grid-cols-2 gap-4 items-start">
+              <div>
+                <label className="block text-sm font-medium text-[var(--stone-700)] mb-1">
+                  {t.admin.maxBookingsPerDay}
+                </label>
+                <p className="text-xs text-[var(--stone-500)]">{t.admin.maxBookingsPerDayDesc}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={settings.maxBookingsPerDay}
+                  onChange={(e) => setSettings({ ...settings, maxBookingsPerDay: parseInt(e.target.value) || 1 })}
+                  className="input-field w-20 text-center"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 pt-6 border-t border-[var(--stone-100)] flex justify-end">
+            <button
+              onClick={handleSaveSettings}
+              disabled={settingsLoading}
+              className="btn-primary flex items-center gap-2"
+            >
+              {settingsLoading ? (
+                <>
+                  <div
+                    className="w-4 h-4 rounded-full animate-spin"
+                    style={{ border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white' }}
+                  />
+                  {language === "de" ? "Speichere..." : "Saving..."}
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  {t.admin.saveSettings}
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

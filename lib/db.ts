@@ -178,6 +178,17 @@ export async function deleteBooking(id: number): Promise<boolean> {
   return !error;
 }
 
+export async function updateBooking(
+  id: number,
+  partnerId: string | null
+): Promise<boolean> {
+  const { error } = await supabase
+    .from("bookings")
+    .update({ partner_id: partnerId })
+    .eq("id", id);
+  return !error;
+}
+
 export async function getUserBookingCount(userId: string): Promise<number> {
   const { count, error } = await supabase
     .from("bookings")
