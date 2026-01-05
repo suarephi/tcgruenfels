@@ -24,6 +24,20 @@ interface Settings {
   maxBookingsPerDay: number;
 }
 
+interface Tournament {
+  id: string;
+  name: string;
+  type: "singles" | "doubles";
+  format: "round_robin" | "single_elimination" | "group_knockout";
+  status: "draft" | "registration" | "in_progress" | "completed";
+  participant_count: number;
+  settings: {
+    groups_count: number;
+    advance_per_group: number;
+    sets_to_win: number;
+  };
+}
+
 interface ToastState {
   message: string;
   type: "error" | "success";
@@ -38,7 +52,15 @@ export default function AdminPage() {
   const [toast, setToast] = useState<ToastState | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"users" | "settings">("users");
+  const [activeTab, setActiveTab] = useState<"users" | "settings" | "tournaments">("users");
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [showCreateTournament, setShowCreateTournament] = useState(false);
+  const [newTournament, setNewTournament] = useState({
+    name: "",
+    type: "singles" as "singles" | "doubles",
+    format: "round_robin" as "round_robin" | "single_elimination" | "group_knockout",
+    settings: { groups_count: 2, advance_per_group: 2, sets_to_win: 2 },
+  });
   const [settings, setSettings] = useState<Settings>({
     bookingWindowDays: 3,
     viewWindowDays: 14,
@@ -77,6 +99,65 @@ export default function AdminPage() {
       // Use defaults if settings can't be fetched
     }
   }, []);
+
+  const fetchTournaments = useCallback(async () => {
+    try {
+      const res = await fetch("/api/tournaments");
+      if (res.ok) {
+        const data = await res.json();
+        setTournaments(data.tournaments || []);
+      }
+    } catch {
+      // Ignore errors
+    }
+  }, []);
+
+  const handleCreateTournament = async () => {
+    if (!newTournament.name.trim()) return;
+    setActionLoading("create-tournament");
+    try {
+      const res = await fetch("/api/tournaments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newTournament),
+      });
+
+      if (res.ok) {
+        setToast({ message: language === "de" ? "Turnier erstellt" : "Tournament created", type: "success" });
+        setShowCreateTournament(false);
+        setNewTournament({
+          name: "",
+          type: "singles",
+          format: "round_robin",
+          settings: { groups_count: 2, advance_per_group: 2, sets_to_win: 2 },
+        });
+        await fetchTournaments();
+      } else {
+        setToast({ message: t.toast.somethingWrong, type: "error" });
+      }
+    } catch {
+      setToast({ message: t.toast.somethingWrong, type: "error" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDeleteTournament = async (id: string) => {
+    setActionLoading(id);
+    try {
+      const res = await fetch(`/api/tournaments/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setToast({ message: language === "de" ? "Turnier gelöscht" : "Tournament deleted", type: "success" });
+        await fetchTournaments();
+      } else {
+        setToast({ message: t.toast.somethingWrong, type: "error" });
+      }
+    } catch {
+      setToast({ message: t.toast.somethingWrong, type: "error" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   const handleSaveSettings = async () => {
     setSettingsLoading(true);
@@ -123,10 +204,11 @@ export default function AdminPage() {
       setCurrentUserId(user.id);
       fetchUsers();
       fetchSettings();
+      fetchTournaments();
     };
 
     checkAuth();
-  }, [supabase, router, fetchUsers, fetchSettings]);
+  }, [supabase, router, fetchUsers, fetchSettings, fetchTournaments]);
 
   const handleToggleAdmin = async (userId: string, makeAdmin: boolean) => {
     setActionLoading(userId);
@@ -312,6 +394,16 @@ export default function AdminPage() {
           }`}
         >
           {t.admin.settings}
+        </button>
+        <button
+          onClick={() => setActiveTab("tournaments")}
+          className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+            activeTab === "tournaments"
+              ? "bg-[var(--forest-600)] text-white"
+              : "bg-[var(--cream-200)] text-[var(--stone-600)] hover:bg-[var(--cream-300)]"
+          }`}
+        >
+          {t.admin.tournaments}
         </button>
       </div>
 
@@ -604,6 +696,205 @@ export default function AdminPage() {
               )}
             </button>
           </div>
+        </div>
+      )}
+
+      {activeTab === "tournaments" && (
+        <div className="animate-slide-up">
+          {/* Create Tournament Button */}
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="font-serif text-xl text-[var(--stone-800)]">
+              {t.admin.tournaments}
+            </h2>
+            <button
+              onClick={() => setShowCreateTournament(true)}
+              className="btn-primary flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              {t.admin.createTournament}
+            </button>
+          </div>
+
+          {/* Create Tournament Modal */}
+          {showCreateTournament && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div
+                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                onClick={() => setShowCreateTournament(false)}
+              />
+              <div className="relative w-full max-w-md card-elevated p-6 animate-scale-in">
+                <h3 className="font-serif text-xl text-[var(--stone-900)] mb-4">
+                  {t.admin.createTournament}
+                </h3>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--stone-700)] mb-1.5">
+                      {t.tournament.name}
+                    </label>
+                    <input
+                      type="text"
+                      value={newTournament.name}
+                      onChange={(e) => setNewTournament({ ...newTournament, name: e.target.value })}
+                      placeholder={t.tournament.namePlaceholder}
+                      className="input-field"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--stone-700)] mb-1.5">
+                      {t.tournament.type}
+                    </label>
+                    <select
+                      value={newTournament.type}
+                      onChange={(e) => setNewTournament({ ...newTournament, type: e.target.value as "singles" | "doubles" })}
+                      className="input-field"
+                    >
+                      <option value="singles">{t.tournament.singles}</option>
+                      <option value="doubles">{t.tournament.doubles}</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--stone-700)] mb-1.5">
+                      {t.tournament.format}
+                    </label>
+                    <select
+                      value={newTournament.format}
+                      onChange={(e) => setNewTournament({ ...newTournament, format: e.target.value as "round_robin" | "single_elimination" | "group_knockout" })}
+                      className="input-field"
+                    >
+                      <option value="round_robin">{t.tournament.roundRobin}</option>
+                      <option value="single_elimination">{t.tournament.singleElimination}</option>
+                      <option value="group_knockout">{t.tournament.groupKnockout}</option>
+                    </select>
+                  </div>
+
+                  {newTournament.format === "group_knockout" && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--stone-700)] mb-1.5">
+                          {t.tournament.groupsCount}
+                        </label>
+                        <input
+                          type="number"
+                          min={2}
+                          max={8}
+                          value={newTournament.settings.groups_count}
+                          onChange={(e) => setNewTournament({
+                            ...newTournament,
+                            settings: { ...newTournament.settings, groups_count: parseInt(e.target.value) || 2 }
+                          })}
+                          className="input-field"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--stone-700)] mb-1.5">
+                          {t.tournament.advancePerGroup}
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={4}
+                          value={newTournament.settings.advance_per_group}
+                          onChange={(e) => setNewTournament({
+                            ...newTournament,
+                            settings: { ...newTournament.settings, advance_per_group: parseInt(e.target.value) || 1 }
+                          })}
+                          className="input-field"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={() => setShowCreateTournament(false)}
+                    className="flex-1 btn-secondary"
+                  >
+                    {t.booking.cancelDialog}
+                  </button>
+                  <button
+                    onClick={handleCreateTournament}
+                    disabled={!newTournament.name.trim() || actionLoading === "create-tournament"}
+                    className="flex-1 btn-primary disabled:opacity-50"
+                  >
+                    {actionLoading === "create-tournament" ? t.tournament.creating : t.tournament.create}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tournaments List */}
+          {tournaments.length === 0 ? (
+            <div className="card-elevated p-12 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ background: "var(--cream-200)" }}>
+                <svg className="w-8 h-8 text-[var(--stone-400)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+              </div>
+              <p className="text-[var(--stone-500)]">{t.admin.noTournaments}</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {tournaments.map((tournament) => (
+                <div key={tournament.id} className="card-elevated p-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="font-serif text-lg text-[var(--stone-900)]">
+                          {tournament.name}
+                        </h3>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          tournament.status === "draft" ? "bg-[var(--stone-100)] text-[var(--stone-600)]" :
+                          tournament.status === "registration" ? "bg-blue-100 text-blue-700" :
+                          tournament.status === "in_progress" ? "bg-[var(--forest-100)] text-[var(--forest-700)]" :
+                          "bg-[var(--terracotta-100)] text-[var(--terracotta-700)]"
+                        }`}>
+                          {tournament.status === "draft" ? t.tournament.draft :
+                           tournament.status === "registration" ? t.tournament.registration :
+                           tournament.status === "in_progress" ? t.tournament.inProgress :
+                           t.tournament.completed}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-[var(--stone-500)]">
+                        <span>{tournament.type === "singles" ? t.tournament.singles : t.tournament.doubles}</span>
+                        <span>•</span>
+                        <span>
+                          {tournament.format === "round_robin" ? t.tournament.roundRobin :
+                           tournament.format === "single_elimination" ? t.tournament.singleElimination :
+                           t.tournament.groupKnockout}
+                        </span>
+                        <span>•</span>
+                        <span>{tournament.participant_count} {t.tournament.participants}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/tournaments/${tournament.id}`}
+                        className="text-sm font-medium px-3 py-1.5 rounded-lg transition-all hover:bg-[var(--forest-50)]"
+                        style={{ color: "var(--forest-600)" }}
+                      >
+                        {language === "de" ? "Ansehen" : "View"}
+                      </Link>
+                      <button
+                        onClick={() => handleDeleteTournament(tournament.id)}
+                        disabled={actionLoading === tournament.id}
+                        className="text-sm font-medium px-3 py-1.5 rounded-lg transition-all disabled:opacity-50 hover:bg-red-50"
+                        style={{ color: "#dc2626" }}
+                      >
+                        {actionLoading === tournament.id ? "..." : t.admin.deleteUser}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

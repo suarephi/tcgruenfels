@@ -7,6 +7,7 @@ import {
   createBooking,
   getProfileById,
 } from "@/lib/db";
+import { getActiveTournamentsForUser } from "@/lib/tournaments";
 
 // Swiss timezone
 const TIMEZONE = "Europe/Zurich";
@@ -42,6 +43,10 @@ export async function GET(request: NextRequest) {
   const profile = await getProfileById(user.id);
   const isAdmin = profile?.is_admin || false;
 
+  // Check if user is a tournament participant
+  const activeTournaments = await getActiveTournamentsForUser(user.id);
+  const isTournamentPlayer = activeTournaments.length > 0;
+
   const startDate = getSwissDate(0);
   const endDate = getSwissDate(VIEW_DAYS - 1);
   console.log("Fetching bookings from", startDate, "to", endDate);
@@ -51,8 +56,8 @@ export async function GET(request: NextRequest) {
   // Generate array of dates to display
   const dates = Array.from({ length: VIEW_DAYS }, (_, i) => getSwissDate(i));
 
-  // Admins can book any date, regular users only 3 days
-  const maxBookableDate = isAdmin ? getSwissDate(VIEW_DAYS - 1) : getSwissDate(BOOK_DAYS - 1);
+  // Admins and tournament players can book any date, regular users only 3 days
+  const maxBookableDate = (isAdmin || isTournamentPlayer) ? getSwissDate(VIEW_DAYS - 1) : getSwissDate(BOOK_DAYS - 1);
 
   return NextResponse.json({
     bookings,
@@ -60,6 +65,7 @@ export async function GET(request: NextRequest) {
     maxBookableDate,
     currentUserId: user.id,
     isAdmin,
+    isTournamentPlayer,
   });
 }
 
@@ -74,14 +80,26 @@ export async function POST(request: NextRequest) {
   const profile = await getProfileById(user.id);
   const isAdmin = profile?.is_admin || false;
 
+  // Check if user is a tournament participant
+  const activeTournaments = await getActiveTournamentsForUser(user.id);
+  const isTournamentPlayer = activeTournaments.length > 0;
+
   try {
-    const { date, hour, partnerId } = await request.json();
+    const { date, hour, partnerId, bookTwoHours } = await request.json();
     const userId = user.id;
 
     // Validate hour
     if (hour < 6 || hour > 21) {
       return NextResponse.json(
         { error: "Invalid hour. Must be between 6 and 21" },
+        { status: 400 }
+      );
+    }
+
+    // For 2-hour bookings, validate second hour too
+    if (bookTwoHours && isTournamentPlayer && hour > 20) {
+      return NextResponse.json(
+        { error: "Cannot book 2 hours starting after 20:00" },
         { status: 400 }
       );
     }
@@ -94,8 +112,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if date is within booking window (admins bypass this)
-    if (!isAdmin && !isDateWithinBookingWindow(date)) {
+    // Check if date is within booking window (admins and tournament players bypass this)
+    if (!isAdmin && !isTournamentPlayer && !isDateWithinBookingWindow(date)) {
       return NextResponse.json(
         { error: "Can only book within the next 3 days" },
         { status: 400 }
@@ -111,18 +129,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user already has a booking on this date (admins bypass this)
-    if (!isAdmin) {
-      const userBookings = await getUserBookingsForDate(userId, date);
-      if (userBookings.length > 0) {
+    // For 2-hour bookings, check the second slot too
+    if (bookTwoHours && isTournamentPlayer) {
+      const existingSecondBooking = await getBookingByDateAndHour(date, hour + 1);
+      if (existingSecondBooking) {
         return NextResponse.json(
-          { error: "You can only book once per day" },
+          { error: "The second hour slot is already booked" },
           { status: 400 }
         );
       }
     }
 
+    // Check if user already has a booking on this date (admins bypass this)
+    // Tournament players can book 2 hours, so we allow up to 2 bookings
+    if (!isAdmin) {
+      const userBookings = await getUserBookingsForDate(userId, date);
+      const maxBookingsAllowed = isTournamentPlayer ? 2 : 1;
+      const bookingsToCreate = (bookTwoHours && isTournamentPlayer) ? 2 : 1;
+
+      if (userBookings.length + bookingsToCreate > maxBookingsAllowed) {
+        return NextResponse.json(
+          { error: isTournamentPlayer ? "You can only book 2 hours per day as a tournament player" : "You can only book once per day" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Create the first booking
     const bookingId = await createBooking(userId, date, hour, partnerId || null);
+
+    // For 2-hour bookings, create the second booking
+    if (bookTwoHours && isTournamentPlayer) {
+      await createBooking(userId, date, hour + 1, partnerId || null);
+    }
 
     return NextResponse.json({ id: bookingId }, { status: 201 });
   } catch (error) {
