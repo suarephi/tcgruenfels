@@ -52,6 +52,20 @@ export const translations = {
       passwordMinLength: "Password must be at least 6 characters",
       checkEmail: "Check your email to confirm your account!",
     },
+    // Change password page
+    changePassword: {
+      title: "Set a new password",
+      subtitle: "Please choose a personal password to continue.",
+      newPassword: "New Password",
+      newPasswordPlaceholder: "Choose a new password",
+      passwordHint: "At least 6 characters",
+      confirmPassword: "Confirm Password",
+      confirmPasswordPlaceholder: "Re-enter your new password",
+      submit: "Update password",
+      submitting: "Updating...",
+      passwordsMismatch: "Passwords do not match",
+      passwordMinLength: "Password must be at least 6 characters",
+    },
     // Booking page
     booking: {
       title: "Court Schedule",
@@ -273,6 +287,20 @@ export const translations = {
       nameRequired: "Vor- und Nachname sind erforderlich",
       passwordMinLength: "Passwort muss mindestens 6 Zeichen haben",
       checkEmail: "Überprüfen Sie Ihre E-Mail, um Ihr Konto zu bestätigen!",
+    },
+    // Change password page
+    changePassword: {
+      title: "Neues Passwort setzen",
+      subtitle: "Bitte wählen Sie ein persönliches Passwort, um fortzufahren.",
+      newPassword: "Neues Passwort",
+      newPasswordPlaceholder: "Neues Passwort wählen",
+      passwordHint: "Mindestens 6 Zeichen",
+      confirmPassword: "Passwort bestätigen",
+      confirmPasswordPlaceholder: "Neues Passwort erneut eingeben",
+      submit: "Passwort aktualisieren",
+      submitting: "Aktualisiere...",
+      passwordsMismatch: "Passwörter stimmen nicht überein",
+      passwordMinLength: "Passwort muss mindestens 6 Zeichen haben",
     },
     // Booking page
     booking: {
