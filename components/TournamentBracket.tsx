@@ -1,14 +1,16 @@
 "use client";
 
 import { useLanguage } from "@/lib/LanguageContext";
+import { formatParticipantName } from "@/lib/tournaments";
 
 interface Participant {
   id: string;
   tournament_id: string;
-  user_id: string;
+  user_id: string | null;
   partner_id: string | null;
   group_number: number | null;
   seed: number | null;
+  manual_name?: string | null;
   user_first_name?: string;
   user_last_name?: string;
   partner_first_name?: string;
@@ -68,12 +70,7 @@ export default function TournamentBracket({
 
   const getParticipantName = (participant?: Participant) => {
     if (!participant) return t.tournament.bye;
-    const name = `${participant.user_first_name || ""} ${participant.user_last_name || ""}`.trim();
-    if (participant.partner_first_name) {
-      const partnerName = `${participant.partner_first_name} ${participant.partner_last_name || ""}`.trim();
-      return `${name} / ${partnerName}`;
-    }
-    return name || "TBD";
+    return formatParticipantName(participant);
   };
 
   const getRoundName = (roundIndex: number, total: number) => {

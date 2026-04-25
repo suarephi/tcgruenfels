@@ -26,16 +26,33 @@ export interface Tournament {
 export interface TournamentParticipant {
   id: string;
   tournament_id: string;
-  user_id: string;
+  user_id: string | null;
   partner_id: string | null;
   group_number: number | null;
   seed: number | null;
   created_at: string;
+  manual_name?: string | null;
   // Joined fields
   user_first_name?: string;
   user_last_name?: string;
   partner_first_name?: string;
   partner_last_name?: string;
+}
+
+export type ParticipantNameFields = Pick<
+  TournamentParticipant,
+  "manual_name" | "user_first_name" | "user_last_name" | "partner_first_name" | "partner_last_name"
+>;
+
+export function formatParticipantName(p: ParticipantNameFields | undefined | null): string {
+  if (!p) return "Unknown";
+  if (p.manual_name) return p.manual_name;
+  const name = `${p.user_first_name || ""} ${p.user_last_name || ""}`.trim();
+  if (p.partner_first_name) {
+    const partnerName = `${p.partner_first_name} ${p.partner_last_name || ""}`.trim();
+    return `${name} / ${partnerName}`;
+  }
+  return name || "Unknown";
 }
 
 export interface TournamentMatch {
@@ -179,22 +196,24 @@ export async function getTournamentParticipants(
 
   if (error || !participants) return [];
 
-  // Get all user IDs to fetch names
+  // Get all user IDs to fetch names (skip manual rows where user_id is null)
   const userIds = new Set<string>();
   participants.forEach((p) => {
-    userIds.add(p.user_id);
+    if (p.user_id) userIds.add(p.user_id);
     if (p.partner_id) userIds.add(p.partner_id);
   });
 
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id, first_name, last_name")
-    .in("id", Array.from(userIds));
-
-  const profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
+  const profileMap = new Map<string, { id: string; first_name: string; last_name: string }>();
+  if (userIds.size > 0) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, first_name, last_name")
+      .in("id", Array.from(userIds));
+    profiles?.forEach((p) => profileMap.set(p.id, p));
+  }
 
   return participants.map((p) => {
-    const user = profileMap.get(p.user_id);
+    const user = p.user_id ? profileMap.get(p.user_id) : null;
     const partner = p.partner_id ? profileMap.get(p.partner_id) : null;
     return {
       ...p,
@@ -208,11 +227,16 @@ export async function getTournamentParticipants(
 
 export async function addParticipant(
   tournamentId: string,
-  userId: string,
+  userId: string | null,
   partnerId: string | null = null,
   groupNumber: number | null = null,
-  seed: number | null = null
+  seed: number | null = null,
+  manualName: string | null = null
 ): Promise<string> {
+  if (!userId && !manualName) {
+    throw new Error("Either userId or manualName is required");
+  }
+
   const { data, error } = await supabase
     .from("tournament_participants")
     .insert({
@@ -221,6 +245,7 @@ export async function addParticipant(
       partner_id: partnerId,
       group_number: groupNumber,
       seed,
+      manual_name: manualName,
     })
     .select("id")
     .single();

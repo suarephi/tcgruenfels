@@ -9,6 +9,7 @@ import TournamentBracket from "@/components/TournamentBracket";
 import GroupStandings from "@/components/GroupStandings";
 import MatchResultDialog from "@/components/MatchResultDialog";
 import ManualBracketEditor from "@/components/ManualBracketEditor";
+import { formatParticipantName } from "@/lib/tournaments";
 
 interface TournamentSettings {
   groups_count: number;
@@ -29,10 +30,11 @@ interface Tournament {
 interface Participant {
   id: string;
   tournament_id: string;
-  user_id: string;
+  user_id: string | null;
   partner_id: string | null;
   group_number: number | null;
   seed: number | null;
+  manual_name?: string | null;
   user_first_name?: string;
   user_last_name?: string;
   partner_first_name?: string;
@@ -93,6 +95,7 @@ export default function TournamentDetailPage() {
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [doublesPartners, setDoublesPartners] = useState<Record<string, string>>({});
+  const [manualNamesText, setManualNamesText] = useState("");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [viewAsUserId, setViewAsUserId] = useState<string | null>(null);
   const [showBracketEditor, setShowBracketEditor] = useState(false);
@@ -152,7 +155,12 @@ export default function TournamentDetailPage() {
   }, [fetchTournament, fetchAllUsers, supabase]);
 
   const handleAddParticipants = async () => {
-    if (selectedUserIds.length === 0) return;
+    const manualNames = manualNamesText
+      .split("\n")
+      .map((n) => n.trim())
+      .filter((n) => n.length > 0);
+
+    if (selectedUserIds.length === 0 && manualNames.length === 0) return;
     setActionLoading("add-participant");
 
     try {
@@ -178,6 +186,19 @@ export default function TournamentDetailPage() {
         }
       }
 
+      if (manualNames.length > 0) {
+        const res = await fetch(`/api/tournaments/${tournamentId}/participants`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ manualNames }),
+        });
+        if (res.ok) {
+          successCount += manualNames.length;
+        } else {
+          errorCount += manualNames.length;
+        }
+      }
+
       if (successCount > 0) {
         setToast({
           message: language === "de"
@@ -188,6 +209,7 @@ export default function TournamentDetailPage() {
         setShowAddParticipant(false);
         setSelectedUserIds([]);
         setDoublesPartners({});
+        setManualNamesText("");
         await fetchTournament();
       }
 
@@ -340,12 +362,7 @@ export default function TournamentDetailPage() {
 
   const getParticipantName = (participant?: Participant) => {
     if (!participant) return t.tournament.bye;
-    const name = `${participant.user_first_name || ""} ${participant.user_last_name || ""}`.trim();
-    if (participant.partner_first_name) {
-      const partnerName = `${participant.partner_first_name} ${participant.partner_last_name || ""}`.trim();
-      return `${name} / ${partnerName}`;
-    }
-    return name || "Unknown";
+    return formatParticipantName(participant);
   };
 
   const canEditMatch = (match: Match) => {
@@ -387,7 +404,7 @@ export default function TournamentDetailPage() {
       (p) => p.user_id === viewAsUserId || p.partner_id === viewAsUserId
     );
     if (participant) {
-      return `${participant.user_first_name} ${participant.user_last_name}`;
+      return formatParticipantName(participant);
     }
     return null;
   };
@@ -700,11 +717,36 @@ export default function TournamentDetailPage() {
               </div>
             )}
 
+            <div className="mb-4 pt-4 border-t border-[var(--stone-200)]">
+              <label className="block text-sm font-medium text-[var(--stone-700)] mb-2">
+                {language === "de"
+                  ? "Manuelle Teilnehmer (ein Name pro Zeile)"
+                  : "Manual entries (one name per line)"}
+              </label>
+              <textarea
+                value={manualNamesText}
+                onChange={(e) => setManualNamesText(e.target.value)}
+                rows={5}
+                className="input-field font-mono text-sm"
+                placeholder={
+                  language === "de"
+                    ? "Mauro Baumann\nRico Bernardi\n..."
+                    : "Mauro Baumann\nRico Bernardi\n..."
+                }
+              />
+              <p className="text-xs text-[var(--stone-500)] mt-1.5">
+                {language === "de"
+                  ? "Für Spieler ohne Konto. Werden nur in diesem Turnier angezeigt."
+                  : "For players without an account. They appear only in this tournament."}
+              </p>
+            </div>
+
             <div className="flex gap-3">
               <button
                 onClick={() => {
                   setShowAddParticipant(false);
                   setSelectedUserIds([]);
+                  setManualNamesText("");
                 }}
                 className="flex-1 btn-secondary"
               >
@@ -712,14 +754,17 @@ export default function TournamentDetailPage() {
               </button>
               <button
                 onClick={handleAddParticipants}
-                disabled={selectedUserIds.length === 0 || actionLoading === "add-participant"}
+                disabled={
+                  (selectedUserIds.length === 0 && manualNamesText.trim().length === 0) ||
+                  actionLoading === "add-participant"
+                }
                 className="flex-1 btn-primary disabled:opacity-50"
               >
                 {actionLoading === "add-participant"
                   ? "..."
                   : language === "de"
-                  ? `${selectedUserIds.length > 0 ? selectedUserIds.length + ' ' : ''}Hinzufügen`
-                  : `Add${selectedUserIds.length > 0 ? ' ' + selectedUserIds.length : ''}`}
+                  ? "Hinzufügen"
+                  : "Add"}
               </button>
             </div>
           </div>
@@ -830,12 +875,13 @@ export default function TournamentDetailPage() {
                   className="select-field select-field-sm min-w-[200px]"
                 >
                   <option value="">{t.tournament.viewAsAll}</option>
-                  {participants.map((p) => (
-                    <option key={p.id} value={p.user_id}>
-                      {p.user_first_name} {p.user_last_name}
-                      {p.partner_first_name && ` / ${p.partner_first_name} ${p.partner_last_name}`}
-                    </option>
-                  ))}
+                  {participants
+                    .filter((p) => p.user_id)
+                    .map((p) => (
+                      <option key={p.id} value={p.user_id!}>
+                        {getParticipantName(p)}
+                      </option>
+                    ))}
                 </select>
               </div>
             )}
