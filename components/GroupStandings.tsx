@@ -143,11 +143,11 @@ export default function GroupStandings({
     groups.set(1, participants);
   } else {
     participants.forEach((p) => {
-      const groupNum = p.group_number || 1;
-      if (!groups.has(groupNum)) {
-        groups.set(groupNum, []);
+      if (p.group_number == null) return;
+      if (!groups.has(p.group_number)) {
+        groups.set(p.group_number, []);
       }
-      groups.get(groupNum)!.push(p);
+      groups.get(p.group_number)!.push(p);
     });
   }
 
