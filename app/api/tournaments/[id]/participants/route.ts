@@ -35,10 +35,48 @@ export async function POST(
   }
 
   try {
-    const { userId, partnerId, groupNumber, seed } = await request.json();
+    const body = await request.json();
+    const { userId, partnerId, groupNumber, seed, manualName } = body;
+    const manualNames: string[] = Array.isArray(body.manualNames) ? body.manualNames : [];
+
+    const cleanedManualNames = manualNames
+      .map((n) => (typeof n === "string" ? n.trim() : ""))
+      .filter((n) => n.length > 0);
+
+    if (cleanedManualNames.length > 0) {
+      const ids: string[] = [];
+      for (const name of cleanedManualNames) {
+        ids.push(
+          await addParticipant(
+            tournamentId,
+            null,
+            null,
+            groupNumber || null,
+            seed || null,
+            name
+          )
+        );
+      }
+      return NextResponse.json({ ids }, { status: 201 });
+    }
+
+    if (manualName && typeof manualName === "string" && manualName.trim().length > 0) {
+      const id = await addParticipant(
+        tournamentId,
+        null,
+        null,
+        groupNumber || null,
+        seed || null,
+        manualName.trim()
+      );
+      return NextResponse.json({ id }, { status: 201 });
+    }
 
     if (!userId) {
-      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "userId or manualName(s) required" },
+        { status: 400 }
+      );
     }
 
     const participantId = await addParticipant(

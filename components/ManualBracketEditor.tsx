@@ -2,9 +2,11 @@
 
 import { useState, useCallback } from "react";
 import { useLanguage } from "@/lib/LanguageContext";
+import { formatParticipantName } from "@/lib/tournaments";
 
 interface Participant {
   id: string;
+  manual_name?: string | null;
   user_first_name?: string;
   user_last_name?: string;
   partner_first_name?: string;
@@ -53,14 +55,7 @@ export default function ManualBracketEditor({
     return participants.filter((p) => !assigned.has(p.id));
   }, [matches, participants]);
 
-  const getParticipantName = (p: Participant): string => {
-    const name = `${p.user_first_name || ""} ${p.user_last_name || ""}`.trim();
-    if (p.partner_first_name) {
-      const partnerName = `${p.partner_first_name} ${p.partner_last_name || ""}`.trim();
-      return `${name} / ${partnerName}`;
-    }
-    return name || "Unknown";
-  };
+  const getParticipantName = (p: Participant): string => formatParticipantName(p);
 
   const handleDragStart = (e: React.DragEvent, participant: Participant) => {
     e.dataTransfer.setData("participantId", participant.id);
