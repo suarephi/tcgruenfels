@@ -20,7 +20,7 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { language, setLanguage, t } = useLanguage();
+  const { language, t } = useLanguage();
   const router = useRouter();
   const supabase = createBrowserSupabaseClient();
 
@@ -86,33 +86,6 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="flex items-center gap-2 sm:gap-4">
-            {/* Language Switcher */}
-            <div
-              className="flex items-center p-1 rounded-lg"
-              style={{ background: 'var(--cream-200)' }}
-            >
-              <button
-                onClick={() => setLanguage("de")}
-                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all ${
-                  language === "de"
-                    ? "bg-white text-[var(--stone-900)] shadow-sm"
-                    : "text-[var(--stone-500)] hover:text-[var(--stone-700)]"
-                }`}
-              >
-                DE
-              </button>
-              <button
-                onClick={() => setLanguage("en")}
-                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all ${
-                  language === "en"
-                    ? "bg-white text-[var(--stone-900)] shadow-sm"
-                    : "text-[var(--stone-500)] hover:text-[var(--stone-700)]"
-                }`}
-              >
-                EN
-              </button>
-            </div>
-
             {!loading && user ? (
               <>
                 {/* User Dropdown - Desktop */}
