@@ -18,8 +18,8 @@ export default function Home() {
           Tennisclub seit 1962
         </p>
         <p className="text-base text-[var(--stone-400)] max-w-xl mx-auto mb-10">
-          Drei Sandplätze im Grünen. Vereinsleben, Clubmeisterschaft,
-          Junioren- und Seniorenturniere — willkommen am TC Grünfels.
+          Ein Sandplatz im Grünen. Vereinsleben und Clubmeisterschaft —
+          willkommen am TC Grünfels.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link href="/login" className="btn-primary text-base">
@@ -38,7 +38,7 @@ export default function Home() {
             Anlage
           </h3>
           <p className="text-sm text-[var(--stone-600)] leading-relaxed">
-            Drei gepflegte Sandplätze, Clubhaus mit Garderoben und Terrasse.
+            Ein gepflegter Sandplatz, Clubhaus mit Garderoben und Terrasse.
             Anfahrt und Plan auf Anfrage.
           </p>
         </div>

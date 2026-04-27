@@ -3,12 +3,30 @@
 
 CREATE TABLE IF NOT EXISTS contact_messages (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  type TEXT NOT NULL DEFAULT 'general' CHECK (type IN ('general', 'membership')),
   name TEXT NOT NULL,
   email TEXT NOT NULL,
+  phone TEXT,
   subject TEXT,
   message TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Idempotent migrations for existing tables.
+ALTER TABLE contact_messages
+  ADD COLUMN IF NOT EXISTS type TEXT NOT NULL DEFAULT 'general';
+ALTER TABLE contact_messages
+  ADD COLUMN IF NOT EXISTS phone TEXT;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'contact_messages_type_check'
+  ) THEN
+    ALTER TABLE contact_messages
+      ADD CONSTRAINT contact_messages_type_check
+      CHECK (type IN ('general', 'membership'));
+  END IF;
+END $$;
 
 ALTER TABLE contact_messages ENABLE ROW LEVEL SECURITY;
 

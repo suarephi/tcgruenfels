@@ -21,7 +21,7 @@ export async function GET() {
 
   const { data, error } = await auth.supabase
     .from("contact_messages")
-    .select("id, name, email, subject, message, created_at")
+    .select("id, type, name, email, phone, subject, message, created_at")
     .order("created_at", { ascending: false });
 
   if (error) {

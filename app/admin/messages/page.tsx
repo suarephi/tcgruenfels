@@ -6,8 +6,10 @@ import Link from "next/link";
 
 interface Message {
   id: string;
+  type: "general" | "membership" | null;
   name: string;
   email: string;
+  phone: string | null;
   subject: string | null;
   message: string;
   created_at: string;
@@ -109,15 +111,36 @@ export default function AdminMessagesPage() {
             <div key={m.id} className="card-elevated p-5">
               <div className="flex items-start justify-between gap-4 mb-3">
                 <div>
-                  <div className="font-medium text-[var(--stone-800)]">
-                    {m.name}
+                  <div className="flex items-center gap-2 mb-1">
+                    {m.type === "membership" && (
+                      <span
+                        className="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full"
+                        style={{
+                          background: "var(--terracotta-100)",
+                          color: "var(--terracotta-700)",
+                        }}
+                      >
+                        Mitgliedschaft
+                      </span>
+                    )}
+                    <span className="font-medium text-[var(--stone-800)]">
+                      {m.name}
+                    </span>
                   </div>
                   <a
                     href={`mailto:${m.email}`}
-                    className="text-sm text-[var(--stone-500)] hover:underline"
+                    className="text-sm text-[var(--stone-500)] hover:underline block"
                   >
                     {m.email}
                   </a>
+                  {m.phone && (
+                    <a
+                      href={`tel:${m.phone}`}
+                      className="text-sm text-[var(--stone-500)] hover:underline"
+                    >
+                      {m.phone}
+                    </a>
+                  )}
                 </div>
                 <div className="text-right">
                   <div className="text-xs text-[var(--stone-400)]">

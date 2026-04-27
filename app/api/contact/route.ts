@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+type RequestType = "general" | "membership";
+
 interface ContactPayload {
+  type: RequestType;
   name: string;
   email: string;
+  phone: string | null;
   subject: string | null;
   message: string;
 }
@@ -24,13 +28,16 @@ async function forwardToBrevo(payload: ContactPayload) {
   const fromEmail = process.env.CONTACT_FROM_EMAIL || "noreply@tcgf.ch";
   const toEmail = process.env.CONTACT_TO_EMAIL || "tcgrunfels@gmail.com";
 
+  const tagPrefix = payload.type === "membership" ? "Mitgliedschaft" : "Webformular";
   const subject = payload.subject
-    ? `[Webformular] ${payload.subject}`
-    : `[Webformular] Anfrage von ${payload.name}`;
+    ? `[${tagPrefix}] ${payload.subject}`
+    : `[${tagPrefix}] Anfrage von ${payload.name}`;
 
   const htmlContent = `
+    <p><strong>Anfrage-Typ:</strong> ${payload.type === "membership" ? "Mitgliedschaftsanfrage" : "Allgemeine Anfrage"}</p>
     <p><strong>Name:</strong> ${escapeHtml(payload.name)}</p>
     <p><strong>E-Mail:</strong> <a href="mailto:${escapeHtml(payload.email)}">${escapeHtml(payload.email)}</a></p>
+    ${payload.phone ? `<p><strong>Telefon:</strong> ${escapeHtml(payload.phone)}</p>` : ""}
     ${payload.subject ? `<p><strong>Betreff:</strong> ${escapeHtml(payload.subject)}</p>` : ""}
     <p><strong>Nachricht:</strong></p>
     <p style="white-space: pre-wrap;">${escapeHtml(payload.message)}</p>
@@ -60,7 +67,7 @@ async function forwardToBrevo(payload: ContactPayload) {
 
 export async function POST(request: Request) {
   try {
-    const { name, email, subject, message } = await request.json();
+    const { type, name, email, phone, subject, message } = await request.json();
 
     if (!name || !email || !message) {
       return NextResponse.json(
@@ -69,9 +76,12 @@ export async function POST(request: Request) {
       );
     }
 
+    const requestType: RequestType = type === "membership" ? "membership" : "general";
     const trimmed: ContactPayload = {
+      type: requestType,
       name: String(name).trim().slice(0, 200),
       email: String(email).trim().slice(0, 320),
+      phone: phone ? String(phone).trim().slice(0, 50) : null,
       subject: subject ? String(subject).trim().slice(0, 200) : null,
       message: String(message).trim().slice(0, 5000),
     };
