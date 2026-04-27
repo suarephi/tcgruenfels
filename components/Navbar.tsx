@@ -239,16 +239,16 @@ export default function Navbar() {
             ) : !loading ? (
               <div className="flex items-center gap-2">
                 <Link
-                  href="/login"
-                  className="text-sm font-medium px-3 py-1.5 rounded-lg transition-all text-[var(--stone-600)] hover:text-[var(--stone-900)] hover:bg-[var(--cream-200)]"
+                  href="/#kontakt"
+                  className="text-sm font-medium px-3 py-1.5 rounded-lg transition-all text-[var(--stone-600)] hover:text-[var(--stone-900)] hover:bg-[var(--cream-200)] hidden sm:block"
                 >
-                  {t.nav.signIn}
+                  {language === "de" ? "Kontakt" : "Contact"}
                 </Link>
                 <Link
-                  href="/register"
-                  className="btn-primary text-sm hidden sm:block"
+                  href="/login"
+                  className="btn-primary text-sm"
                 >
-                  {t.nav.getStarted}
+                  {language === "de" ? "Mitgliederbereich" : "Members"}
                 </Link>
               </div>
             ) : (
