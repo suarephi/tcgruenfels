@@ -405,6 +405,12 @@ export default function AdminPage() {
         >
           {t.admin.tournaments}
         </button>
+        <Link
+          href="/admin/messages"
+          className="px-4 py-2 rounded-lg font-medium text-sm transition-all bg-[var(--cream-200)] text-[var(--stone-600)] hover:bg-[var(--cream-300)]"
+        >
+          {language === "de" ? "Nachrichten" : "Messages"}
+        </Link>
       </div>
 
       {activeTab === "users" && (
