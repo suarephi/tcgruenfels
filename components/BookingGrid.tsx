@@ -67,8 +67,11 @@ function formatHour(hour: number): string {
   return `${hour.toString().padStart(2, "0")}:00`;
 }
 
-// Format name as "P. Suarez"
+// Format name as "P. Suarez". For placeholder accounts that only set a
+// first_name (e.g. "Training", "Platzsperrung") we fall back to the full
+// first_name instead of an unhelpful "T.".
 function formatName(firstName: string, lastName: string): string {
+  if (firstName && !lastName) return firstName;
   const initial = firstName ? firstName.charAt(0).toUpperCase() + "." : "";
   return `${initial} ${lastName || ""}`.trim();
 }
