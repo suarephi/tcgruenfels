@@ -38,7 +38,7 @@ export default function Home() {
             Anlage
           </h3>
           <p className="text-sm text-[var(--stone-600)] leading-relaxed">
-            Ein gepflegter Sandplatz, Clubhaus mit Garderoben und Terrasse.
+            Ein gepflegter Sandplatz, Clubhaus mit Garderoben.
             Anfahrt und Plan auf Anfrage.
           </p>
         </div>
