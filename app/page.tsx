@@ -95,8 +95,23 @@ export default function Home() {
                 E-Mail
               </dt>
               <dd className="text-[var(--stone-700)]">
-                <a href="mailto:tcgrunfels@gmail.com" className="hover:underline">
-                  tcgrunfels@gmail.com
+                <a href="mailto:info@tcgruenfels.ch" className="hover:underline">
+                  info@tcgruenfels.ch
+                </a>
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[var(--stone-400)] uppercase tracking-wide text-xs mb-1">
+                Standort
+              </dt>
+              <dd className="text-[var(--stone-700)]">
+                <a
+                  href="https://maps.google.com/?cid=4290480340083704613"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline"
+                >
+                  TC Grünfels, Jona — auf Google Maps
                 </a>
               </dd>
             </div>
