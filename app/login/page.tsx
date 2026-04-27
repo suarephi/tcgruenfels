@@ -45,23 +45,11 @@ export default function LoginPage() {
       <div className="w-full max-w-sm animate-slide-up">
         {/* Header */}
         <div className="text-center mb-8">
-          <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5"
-            style={{
-              background: 'linear-gradient(135deg, var(--forest-600) 0%, var(--forest-700) 100%)',
-              boxShadow: '0 4px 20px rgba(45, 74, 56, 0.25)',
-            }}
-          >
-            {/* Tennis racket icon */}
-            <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <ellipse cx="10" cy="8" rx="6" ry="7" />
-              <line x1="10" y1="1" x2="10" y2="15" />
-              <line x1="4" y1="8" x2="16" y2="8" />
-              <line x1="5.5" y1="4" x2="14.5" y2="12" />
-              <line x1="5.5" y1="12" x2="14.5" y2="4" />
-              <line x1="10" y1="15" x2="18" y2="23" strokeWidth="2.5" strokeLinecap="round" />
-            </svg>
-          </div>
+          <img
+            src="/logo.png"
+            alt="TC Grünfels"
+            className="h-20 w-auto mx-auto mb-5"
+          />
           <h1 className="font-serif text-3xl text-[var(--stone-900)]">{t.login.title}</h1>
           <p className="text-[var(--stone-500)] mt-2">{t.login.subtitle}</p>
         </div>

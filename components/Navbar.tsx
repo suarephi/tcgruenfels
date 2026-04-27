@@ -215,7 +215,7 @@ export default function Navbar() {
                   href="/#kontakt"
                   className="text-sm font-medium px-3 py-1.5 rounded-lg transition-all text-[var(--stone-600)] hover:text-[var(--stone-900)] hover:bg-[var(--cream-200)] hidden sm:block"
                 >
-                  {language === "de" ? "Kontakt" : "Contact"}
+                  {language === "de" ? "Kontakt / Mitglied werden" : "Contact / Join"}
                 </Link>
                 <Link
                   href="/login"
