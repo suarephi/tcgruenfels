@@ -7,6 +7,7 @@ import Link from "next/link";
 interface Message {
   id: string;
   type: "general" | "membership" | null;
+  membership_type: "einzel" | "familie" | null;
   name: string;
   email: string;
   phone: string | null;
@@ -14,6 +15,11 @@ interface Message {
   message: string;
   created_at: string;
 }
+
+const MEMBERSHIP_LABEL: Record<"einzel" | "familie", string> = {
+  einzel: "Einzelmitgliedschaft (CHF 430)",
+  familie: "Familienmitgliedschaft (CHF 550)",
+};
 
 export default function AdminMessagesPage() {
   const router = useRouter();
@@ -156,6 +162,11 @@ export default function AdminMessagesPage() {
                   </button>
                 </div>
               </div>
+              {m.membership_type && (
+                <div className="text-sm font-medium text-[var(--stone-700)] mb-2">
+                  Gewünscht: {MEMBERSHIP_LABEL[m.membership_type]}
+                </div>
+              )}
               {m.subject && (
                 <div className="text-sm font-medium text-[var(--stone-700)] mb-2">
                   Betreff: {m.subject}

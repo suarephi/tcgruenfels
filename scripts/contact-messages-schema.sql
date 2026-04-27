@@ -4,6 +4,7 @@
 CREATE TABLE IF NOT EXISTS contact_messages (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   type TEXT NOT NULL DEFAULT 'general' CHECK (type IN ('general', 'membership')),
+  membership_type TEXT CHECK (membership_type IN ('einzel', 'familie')),
   name TEXT NOT NULL,
   email TEXT NOT NULL,
   phone TEXT,
@@ -17,6 +18,8 @@ ALTER TABLE contact_messages
   ADD COLUMN IF NOT EXISTS type TEXT NOT NULL DEFAULT 'general';
 ALTER TABLE contact_messages
   ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE contact_messages
+  ADD COLUMN IF NOT EXISTS membership_type TEXT;
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -25,6 +28,13 @@ BEGIN
     ALTER TABLE contact_messages
       ADD CONSTRAINT contact_messages_type_check
       CHECK (type IN ('general', 'membership'));
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'contact_messages_membership_type_check'
+  ) THEN
+    ALTER TABLE contact_messages
+      ADD CONSTRAINT contact_messages_membership_type_check
+      CHECK (membership_type IS NULL OR membership_type IN ('einzel', 'familie'));
   END IF;
 END $$;
 

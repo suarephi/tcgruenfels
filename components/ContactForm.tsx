@@ -3,9 +3,11 @@
 import { useState } from "react";
 
 type RequestType = "general" | "membership";
+type MembershipType = "einzel" | "familie";
 
 export default function ContactForm() {
   const [type, setType] = useState<RequestType>("general");
+  const [membershipType, setMembershipType] = useState<MembershipType>("einzel");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -25,7 +27,15 @@ export default function ContactForm() {
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, name, email, phone, subject, message }),
+        body: JSON.stringify({
+          type,
+          name,
+          email,
+          phone,
+          subject,
+          message,
+          membershipType: type === "membership" ? membershipType : null,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -116,18 +126,51 @@ export default function ContactForm() {
       </div>
 
       {isMembership && (
-        <div>
-          <label className="block text-sm font-medium text-[var(--stone-700)] mb-1">
-            Telefon
-          </label>
-          <input
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="input-field w-full"
-            placeholder="Optional"
-          />
-        </div>
+        <>
+          <div>
+            <label className="block text-sm font-medium text-[var(--stone-700)] mb-2">
+              Mitgliedschaftsart
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setMembershipType("einzel")}
+                className={`px-3 py-3 text-sm rounded-lg border transition-all text-left ${
+                  membershipType === "einzel"
+                    ? "border-[var(--forest-600)] bg-[var(--forest-50)]"
+                    : "border-[var(--stone-200)] hover:border-[var(--stone-300)]"
+                }`}
+              >
+                <div className="font-medium text-[var(--stone-800)]">Einzel</div>
+                <div className="text-xs text-[var(--stone-500)]">CHF 430</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMembershipType("familie")}
+                className={`px-3 py-3 text-sm rounded-lg border transition-all text-left ${
+                  membershipType === "familie"
+                    ? "border-[var(--forest-600)] bg-[var(--forest-50)]"
+                    : "border-[var(--stone-200)] hover:border-[var(--stone-300)]"
+                }`}
+              >
+                <div className="font-medium text-[var(--stone-800)]">Familie</div>
+                <div className="text-xs text-[var(--stone-500)]">CHF 550</div>
+              </button>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[var(--stone-700)] mb-1">
+              Telefon
+            </label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="input-field w-full"
+              placeholder="Optional"
+            />
+          </div>
+        </>
       )}
 
       {!isMembership && (

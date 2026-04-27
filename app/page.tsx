@@ -46,10 +46,12 @@ export default function Home() {
           <h3 className="font-serif text-xl text-[var(--stone-800)] mb-2">
             Mitgliedschaft
           </h3>
+          <ul className="text-sm text-[var(--stone-600)] leading-relaxed space-y-1 mb-3">
+            <li>Einzelmitgliedschaft — CHF 430</li>
+            <li>Familienmitgliedschaft — CHF 550</li>
+          </ul>
           <p className="text-sm text-[var(--stone-600)] leading-relaxed">
-            Aktiv-, Junioren- und Passivmitgliedschaften möglich.
-            Schnuppertraining auf Anmeldung. Beitrittsgesuch über das
-            Kontaktformular.
+            Beitrittsgesuch über das Kontaktformular.
           </p>
         </div>
         <div className="card-elevated p-6">

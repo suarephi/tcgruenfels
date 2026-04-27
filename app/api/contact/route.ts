@@ -2,15 +2,22 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 type RequestType = "general" | "membership";
+type MembershipType = "einzel" | "familie";
 
 interface ContactPayload {
   type: RequestType;
+  membership_type: MembershipType | null;
   name: string;
   email: string;
   phone: string | null;
   subject: string | null;
   message: string;
 }
+
+const MEMBERSHIP_LABEL: Record<MembershipType, string> = {
+  einzel: "Einzelmitgliedschaft (CHF 430)",
+  familie: "Familienmitgliedschaft (CHF 550)",
+};
 
 function escapeHtml(s: string): string {
   return s
@@ -33,8 +40,13 @@ async function forwardToBrevo(payload: ContactPayload) {
     ? `[${tagPrefix}] ${payload.subject}`
     : `[${tagPrefix}] Anfrage von ${payload.name}`;
 
+  const membershipLabel = payload.membership_type
+    ? MEMBERSHIP_LABEL[payload.membership_type]
+    : null;
+
   const htmlContent = `
     <p><strong>Anfrage-Typ:</strong> ${payload.type === "membership" ? "Mitgliedschaftsanfrage" : "Allgemeine Anfrage"}</p>
+    ${membershipLabel ? `<p><strong>Mitgliedschaftsart:</strong> ${escapeHtml(membershipLabel)}</p>` : ""}
     <p><strong>Name:</strong> ${escapeHtml(payload.name)}</p>
     <p><strong>E-Mail:</strong> <a href="mailto:${escapeHtml(payload.email)}">${escapeHtml(payload.email)}</a></p>
     ${payload.phone ? `<p><strong>Telefon:</strong> ${escapeHtml(payload.phone)}</p>` : ""}
@@ -67,7 +79,8 @@ async function forwardToBrevo(payload: ContactPayload) {
 
 export async function POST(request: Request) {
   try {
-    const { type, name, email, phone, subject, message } = await request.json();
+    const { type, membershipType, name, email, phone, subject, message } =
+      await request.json();
 
     if (!name || !email || !message) {
       return NextResponse.json(
@@ -77,8 +90,14 @@ export async function POST(request: Request) {
     }
 
     const requestType: RequestType = type === "membership" ? "membership" : "general";
+    const validatedMembership: MembershipType | null =
+      requestType === "membership" && (membershipType === "einzel" || membershipType === "familie")
+        ? membershipType
+        : null;
+
     const trimmed: ContactPayload = {
       type: requestType,
+      membership_type: validatedMembership,
       name: String(name).trim().slice(0, 200),
       email: String(email).trim().slice(0, 320),
       phone: phone ? String(phone).trim().slice(0, 50) : null,
