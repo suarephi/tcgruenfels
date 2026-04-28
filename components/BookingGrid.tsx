@@ -344,8 +344,8 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
 
   // Slot is "blocked" by a neighbouring booking that overlaps it but doesn't
   // start exactly here (e.g. a 16:00 booking blocks the 16:30 row from being
-  // a separate bookable slot). Used to grey out half-hour rows that fall
-  // inside another member's hour.
+  // a separate bookable slot). Used to merge the half-hour row visually
+  // with the booking above (or below) it.
   const getOverlappingBooking = (
     date: string, hour: number, minute: number
   ): Booking | undefined => {
@@ -356,6 +356,17 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
       const bStart = b.hour * 60 + b.minute;
       return Math.abs(bStart - newStart) < 60;
     });
+  };
+
+  // Returns true when the slot directly after (h,m) is the second half of a
+  // 60-min booking that started at (h,m). Used to render the booking with
+  // rowSpan=2 in the desktop table so it visually covers both 30-min rows.
+  const slotSpansTwoRows = (date: string, hour: number, minute: number): boolean => {
+    const nextHour = minute === 0 ? hour : hour + 1;
+    const nextMin = minute === 0 ? 30 : 0;
+    // Only span if a next slot exists in our SLOTS grid.
+    if (nextHour > 21 || (nextHour === 21 && nextMin === 30)) return false;
+    return true;
   };
 
   const isBookable = (date: string): boolean => {
@@ -458,6 +469,10 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
           const { hour, minute } = slot;
           const booking = getBooking(selectedDate, hour, minute);
           const blockedBy = !booking ? getOverlappingBooking(selectedDate, hour, minute) : undefined;
+          // Mobile: hide the half-hour row entirely when it's covered by a
+          // booking starting in the previous slot. The booking above
+          // already implies a full hour.
+          if (blockedBy) return null;
           const isMyBooking = booking && isViewAsUserBooking(booking);
           const isActuallyMyBooking = booking && booking.user_id === data.currentUserId;
           const key = `${selectedDate}-${hour}-${minute}`;
@@ -538,10 +553,6 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
                         </button>
                       </div>
                     )}
-                  </div>
-                ) : blockedBy ? (
-                  <div className="w-full py-3 slot-unavailable rounded-xl text-center text-sm text-[var(--stone-400)]">
-                    —
                   </div>
                 ) : canBookSelectedDate ? (
                   <button
@@ -631,6 +642,11 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
                   const { hour, minute } = slot;
                   const booking = getBooking(date, hour, minute);
                   const blockedBy = !booking ? getOverlappingBooking(date, hour, minute) : undefined;
+                  // If a booking from the previous slot covers this cell,
+                  // skip it entirely — the previous row's <td rowSpan={2}>
+                  // already covers this position.
+                  if (blockedBy) return null;
+                  const spanTwo = booking ? slotSpansTwoRows(date, hour, minute) : false;
                   const isMyBooking = booking && isViewAsUserBooking(booking);
                   const isActuallyMyBooking = booking && booking.user_id === data.currentUserId;
                   const key = `${date}-${hour}-${minute}`;
@@ -640,6 +656,7 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
                   return (
                     <td
                       key={key}
+                      rowSpan={spanTwo ? 2 : 1}
                       className={`p-2 border-r border-[var(--stone-100)] last:border-r-0 ${
                         !canBook ? "bg-[var(--cream-100)]" : ""
                       }`}
@@ -698,10 +715,6 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
                               </button>
                             </div>
                           )}
-                        </div>
-                      ) : blockedBy ? (
-                        <div className="w-full h-full min-h-[52px] rounded-lg flex items-center justify-center text-sm text-[var(--stone-300)]">
-                          —
                         </div>
                       ) : canBook ? (
                         <button
