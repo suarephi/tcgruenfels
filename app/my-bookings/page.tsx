@@ -12,6 +12,7 @@ interface Booking {
   id: number;
   date: string;
   hour: number;
+  minute: number;
   partner_id?: string | null;
   partner_first_name?: string;
   partner_last_name?: string;
@@ -63,6 +64,7 @@ export default function MyBookingsPage() {
         id: b.id,
         date: b.date,
         hour: b.hour,
+        minute: b.minute ?? 0,
         partner_id: b.partner_id,
         partner_first_name: undefined,
         partner_last_name: undefined,
@@ -140,8 +142,15 @@ export default function MyBookingsPage() {
     });
   };
 
-  const formatHour = (hour: number) => {
-    return `${hour.toString().padStart(2, "0")}:00 - ${(hour + 1).toString().padStart(2, "0")}:00`;
+  const formatHour = (hour: number, minute: number) => {
+    const startMin = hour * 60 + minute;
+    const endMin = startMin + 60;
+    const fmt = (mins: number) => {
+      const hh = Math.floor(mins / 60).toString().padStart(2, "0");
+      const mm = (mins % 60).toString().padStart(2, "0");
+      return `${hh}:${mm}`;
+    };
+    return `${fmt(startMin)} - ${fmt(endMin)}`;
   };
 
   const isToday = (dateStr: string) => {
@@ -181,6 +190,7 @@ export default function MyBookingsPage() {
           bookingId={editDialog.booking.id}
           date={editDialog.booking.date}
           hour={editDialog.booking.hour}
+          minute={editDialog.booking.minute}
           currentPartnerId={editDialog.booking.partner_id || null}
           currentPartnerName={
             editDialog.booking.partner_first_name
@@ -268,7 +278,7 @@ export default function MyBookingsPage() {
                       {formatDate(booking.date)}
                     </div>
                     <div className="text-[var(--stone-600)] mt-0.5">
-                      {formatHour(booking.hour)}
+                      {formatHour(booking.hour, booking.minute)}
                     </div>
                     {booking.partner_first_name && (
                       <div className="text-sm text-[var(--stone-500)] mt-1 flex items-center gap-1">

@@ -3,7 +3,7 @@ import { createServerSupabaseClient } from "@/lib/supabase-server";
 import {
   getBookingsForDateRange,
   getUserBookingsForDate,
-  getBookingByDateAndHour,
+  getOverlappingBooking,
   createBooking,
   getProfileById,
 } from "@/lib/db";
@@ -85,7 +85,8 @@ export async function POST(request: NextRequest) {
   const isTournamentPlayer = activeTournaments.length > 0;
 
   try {
-    const { date, hour, partnerId, partnerIds, bookTwoHours, bookForUserId, notes } = await request.json();
+    const { date, hour, minute: rawMinute, partnerId, partnerIds, bookTwoHours, bookForUserId, notes } = await request.json();
+    const minute = rawMinute === 30 ? 30 : 0;
 
     // Allow admin to book on behalf of another user
     let userId = user.id;
@@ -97,18 +98,22 @@ export async function POST(request: NextRequest) {
     // For now, only store the first partner (database schema limitation)
     const effectivePartnerId = partnerIds?.length > 0 ? partnerIds[0] : (partnerId || null);
 
-    // Validate hour
-    if (hour < 6 || hour > 21) {
+    // Validate slot start. Last bookable :00 start is 21:00 (21:00–22:00).
+    // Last bookable :30 start is 20:30 (20:30–21:30) — 21:30 would end past
+    // close at 22:30.
+    if (hour < 6 || hour > 21 || (minute === 30 && hour > 20)) {
       return NextResponse.json(
-        { error: "Invalid hour. Must be between 6 and 21" },
+        { error: "Invalid time. Slots run 06:00–22:00 in 30-minute steps." },
         { status: 400 }
       );
     }
 
-    // For 2-hour bookings, validate second hour too
-    if (bookTwoHours && hour > 20) {
+    // For 2-hour bookings, the second slot starts (hour+1, minute) and
+    // covers another 60 minutes. Last allowed first-slot start is 20:00 for
+    // :00, 19:30 for :30 (so the second slot doesn't run past 22:00).
+    if (bookTwoHours && (hour > 20 || (minute === 30 && hour > 19))) {
       return NextResponse.json(
-        { error: "Cannot book 2 hours starting after 20:00" },
+        { error: "Cannot book 2 hours that close to closing time." },
         { status: 400 }
       );
     }
@@ -129,21 +134,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if slot is already taken
-    const existingBooking = await getBookingByDateAndHour(date, hour);
+    // Check if slot overlaps any existing booking
+    const existingBooking = await getOverlappingBooking(date, hour, minute);
     if (existingBooking) {
       return NextResponse.json(
-        { error: "This time slot is already booked" },
+        { error: "This time slot overlaps with an existing booking" },
         { status: 400 }
       );
     }
 
     // For 2-hour bookings, check the second slot too
     if (bookTwoHours) {
-      const existingSecondBooking = await getBookingByDateAndHour(date, hour + 1);
+      const existingSecondBooking = await getOverlappingBooking(date, hour + 1, minute);
       if (existingSecondBooking) {
         return NextResponse.json(
-          { error: "The second hour slot is already booked" },
+          { error: "The second hour slot overlaps with an existing booking" },
           { status: 400 }
         );
       }
@@ -165,11 +170,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the first booking
-    const bookingId = await createBooking(userId, date, hour, effectivePartnerId, notes || null);
+    const bookingId = await createBooking(userId, date, hour, minute, effectivePartnerId, notes || null);
 
     // For 2-hour bookings, create the second booking
     if (bookTwoHours) {
-      await createBooking(userId, date, hour + 1, effectivePartnerId, notes || null);
+      await createBooking(userId, date, hour + 1, minute, effectivePartnerId, notes || null);
     }
 
     return NextResponse.json({ id: bookingId }, { status: 201 });

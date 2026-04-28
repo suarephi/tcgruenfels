@@ -11,6 +11,7 @@ interface Booking {
   user_id: string;
   date: string;
   hour: number;
+  minute: number;
   notes?: string | null;
   first_name: string;
   last_name: string;
@@ -23,6 +24,7 @@ interface BookingDialogState {
   isOpen: boolean;
   date: string;
   hour: number;
+  minute: number;
 }
 
 interface EditDialogState {
@@ -30,6 +32,7 @@ interface EditDialogState {
   bookingId: number;
   date: string;
   hour: number;
+  minute: number;
   partnerId: string | null;
   partnerName: string | null;
 }
@@ -61,10 +64,19 @@ interface BookingGridProps {
   onTournamentBookingComplete?: () => void;
 }
 
-const HOURS = Array.from({ length: 16 }, (_, i) => i + 6);
+// 60-minute slots running 06:00–22:00 in 30-minute steps. Last :30 start
+// is 20:30 (covers 20:30–21:30); last :00 start is 21:00 (covers 21:00–22:00).
+const SLOTS: { hour: number; minute: number }[] = (() => {
+  const out: { hour: number; minute: number }[] = [];
+  for (let h = 6; h <= 21; h++) {
+    out.push({ hour: h, minute: 0 });
+    if (h <= 20) out.push({ hour: h, minute: 30 });
+  }
+  return out;
+})();
 
-function formatHour(hour: number): string {
-  return `${hour.toString().padStart(2, "0")}:00`;
+function formatSlot(hour: number, minute: number): string {
+  return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
 }
 
 // Format name as "P. Suarez". For placeholder accounts that only set a
@@ -96,12 +108,14 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
     isOpen: false,
     date: "",
     hour: 0,
+    minute: 0,
   });
   const [editDialog, setEditDialog] = useState<EditDialogState>({
     isOpen: false,
     bookingId: 0,
     date: "",
     hour: 0,
+    minute: 0,
     partnerId: null,
     partnerName: null,
   });
@@ -160,12 +174,12 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
     return error;
   }, [t.toast]);
 
-  const openBookingDialog = (date: string, hour: number) => {
-    setDialog({ isOpen: true, date, hour });
+  const openBookingDialog = (date: string, hour: number, minute: number) => {
+    setDialog({ isOpen: true, date, hour, minute });
   };
 
   const closeBookingDialog = () => {
-    setDialog({ isOpen: false, date: "", hour: 0 });
+    setDialog({ isOpen: false, date: "", hour: 0, minute: 0 });
   };
 
   const openEditDialog = (booking: Booking) => {
@@ -174,6 +188,7 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
       bookingId: booking.id,
       date: booking.date,
       hour: booking.hour,
+      minute: booking.minute,
       partnerId: booking.partner_id || null,
       partnerName: booking.partner_first_name
         ? `${booking.partner_first_name} ${booking.partner_last_name || ""}`.trim()
@@ -187,14 +202,15 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
       bookingId: 0,
       date: "",
       hour: 0,
+      minute: 0,
       partnerId: null,
       partnerName: null,
     });
   };
 
   const handleBook = async (partnerIds: string[]) => {
-    const { date, hour } = dialog;
-    const key = `${date}-${hour}`;
+    const { date, hour, minute } = dialog;
+    const key = `${date}-${hour}-${minute}`;
     setActionLoading(key);
 
     try {
@@ -210,6 +226,7 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
         body: JSON.stringify({
           date,
           hour,
+          minute,
           partnerIds,
           bookForUserId: viewAsUserId,
           bookTwoHours,
@@ -223,7 +240,7 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
       } else {
         // If this is a tournament match, update the match schedule
         if (tournamentMatch) {
-          const scheduledDateTime = `${date}T${hour.toString().padStart(2, "0")}:00`;
+          const scheduledDateTime = `${date}T${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
           await fetch(`/api/tournaments/${tournamentMatch.tournamentId}/matches/${tournamentMatch.matchId}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
@@ -321,8 +338,24 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
     );
   }
 
-  const getBooking = (date: string, hour: number): Booking | undefined => {
-    return data.bookings.find((b) => b.date === date && b.hour === hour);
+  const getBooking = (date: string, hour: number, minute: number): Booking | undefined => {
+    return data.bookings.find((b) => b.date === date && b.hour === hour && b.minute === minute);
+  };
+
+  // Slot is "blocked" by a neighbouring booking that overlaps it but doesn't
+  // start exactly here (e.g. a 16:00 booking blocks the 16:30 row from being
+  // a separate bookable slot). Used to grey out half-hour rows that fall
+  // inside another member's hour.
+  const getOverlappingBooking = (
+    date: string, hour: number, minute: number
+  ): Booking | undefined => {
+    const newStart = hour * 60 + minute;
+    return data.bookings.find((b) => {
+      if (b.date !== date) return false;
+      if (b.hour === hour && b.minute === minute) return false;
+      const bStart = b.hour * 60 + b.minute;
+      return Math.abs(bStart - newStart) < 60;
+    });
   };
 
   const isBookable = (date: string): boolean => {
@@ -421,22 +454,24 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
 
       {/* Time Slots */}
       <div className="card-elevated rounded-t-none divide-y divide-[var(--stone-100)]">
-        {HOURS.map((hour, index) => {
-          const booking = getBooking(selectedDate, hour);
+        {SLOTS.map((slot, index) => {
+          const { hour, minute } = slot;
+          const booking = getBooking(selectedDate, hour, minute);
+          const blockedBy = !booking ? getOverlappingBooking(selectedDate, hour, minute) : undefined;
           const isMyBooking = booking && isViewAsUserBooking(booking);
           const isActuallyMyBooking = booking && booking.user_id === data.currentUserId;
-          const key = `${selectedDate}-${hour}`;
+          const key = `${selectedDate}-${hour}-${minute}`;
           const isLoading = actionLoading === key || actionLoading === `cancel-${booking?.id}` || actionLoading === `edit-${booking?.id}`;
 
           return (
             <div
-              key={hour}
+              key={key}
               className="flex items-center p-4 gap-4 opacity-0 animate-slide-up"
-              style={{ animationDelay: `${index * 30}ms`, animationFillMode: 'forwards' }}
+              style={{ animationDelay: `${index * 20}ms`, animationFillMode: 'forwards' }}
             >
               <div className="w-16 text-center">
-                <span className="text-sm font-semibold text-[var(--stone-700)]">
-                  {formatHour(hour)}
+                <span className={`text-sm ${minute === 0 ? "font-semibold text-[var(--stone-700)]" : "text-[var(--stone-500)]"}`}>
+                  {formatSlot(hour, minute)}
                 </span>
               </div>
 
@@ -504,9 +539,13 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
                       </div>
                     )}
                   </div>
+                ) : blockedBy ? (
+                  <div className="w-full py-3 slot-unavailable rounded-xl text-center text-sm text-[var(--stone-400)]">
+                    —
+                  </div>
                 ) : canBookSelectedDate ? (
                   <button
-                    onClick={() => openBookingDialog(selectedDate, hour)}
+                    onClick={() => openBookingDialog(selectedDate, hour, minute)}
                     disabled={isLoading}
                     className="w-full py-3 slot-available rounded-xl font-medium text-sm disabled:opacity-50"
                   >
@@ -567,28 +606,34 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
             </tr>
           </thead>
           <tbody>
-            {HOURS.map((hour, hourIdx) => (
+            {SLOTS.map((slot, slotIdx) => (
               <tr
-                key={hour}
+                key={`${slot.hour}-${slot.minute}`}
                 className="border-b border-[var(--stone-100)] last:border-b-0 opacity-0 animate-slide-up"
                 style={{
-                  animationDelay: `${hourIdx * 20}ms`,
+                  animationDelay: `${slotIdx * 12}ms`,
                   animationFillMode: 'forwards',
-                  background: hourIdx % 2 === 0 ? 'white' : 'var(--cream-50)',
+                  background: slot.minute === 0 ? 'white' : 'var(--cream-50)',
                 }}
               >
                 <td
-                  className="p-3 font-semibold text-[var(--stone-700)] border-r border-[var(--stone-100)] sticky left-0 z-10"
-                  style={{ background: hourIdx % 2 === 0 ? 'white' : 'var(--cream-50)' }}
+                  className={`p-3 border-r border-[var(--stone-100)] sticky left-0 z-10 ${
+                    slot.minute === 0
+                      ? "font-semibold text-[var(--stone-700)]"
+                      : "text-sm text-[var(--stone-500)]"
+                  }`}
+                  style={{ background: slot.minute === 0 ? 'white' : 'var(--cream-50)' }}
                 >
-                  {formatHour(hour)}
+                  {formatSlot(slot.hour, slot.minute)}
                 </td>
 
                 {data.dates.map((date) => {
-                  const booking = getBooking(date, hour);
+                  const { hour, minute } = slot;
+                  const booking = getBooking(date, hour, minute);
+                  const blockedBy = !booking ? getOverlappingBooking(date, hour, minute) : undefined;
                   const isMyBooking = booking && isViewAsUserBooking(booking);
                   const isActuallyMyBooking = booking && booking.user_id === data.currentUserId;
-                  const key = `${date}-${hour}`;
+                  const key = `${date}-${hour}-${minute}`;
                   const isLoading = actionLoading === key || actionLoading === `cancel-${booking?.id}` || actionLoading === `edit-${booking?.id}`;
                   const canBook = isBookable(date);
 
@@ -654,9 +699,13 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
                             </div>
                           )}
                         </div>
+                      ) : blockedBy ? (
+                        <div className="w-full h-full min-h-[52px] rounded-lg flex items-center justify-center text-sm text-[var(--stone-300)]">
+                          —
+                        </div>
                       ) : canBook ? (
                         <button
-                          onClick={() => openBookingDialog(date, hour)}
+                          onClick={() => openBookingDialog(date, hour, minute)}
                           disabled={isLoading}
                           className="w-full h-full min-h-[52px] slot-available rounded-lg text-sm font-medium disabled:opacity-50"
                         >
@@ -699,9 +748,10 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
         isOpen={dialog.isOpen}
         date={dialog.date}
         hour={dialog.hour}
+        minute={dialog.minute}
         onConfirm={handleBook}
         onCancel={closeBookingDialog}
-        loading={actionLoading === `${dialog.date}-${dialog.hour}`}
+        loading={actionLoading === `${dialog.date}-${dialog.hour}-${dialog.minute}`}
         tournamentMatch={tournamentMatch}
       />
 
@@ -710,6 +760,7 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
         bookingId={editDialog.bookingId}
         date={editDialog.date}
         hour={editDialog.hour}
+        minute={editDialog.minute}
         currentPartnerId={editDialog.partnerId}
         currentPartnerName={editDialog.partnerName}
         onConfirm={handleEdit}

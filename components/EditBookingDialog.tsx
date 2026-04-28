@@ -14,6 +14,7 @@ interface EditBookingDialogProps {
   bookingId: number;
   date: string;
   hour: number;
+  minute: number;
   currentPartnerId: string | null;
   currentPartnerName: string | null;
   onConfirm: (bookingId: number, partnerId: string | null) => void;
@@ -26,6 +27,7 @@ export default function EditBookingDialog({
   bookingId,
   date,
   hour,
+  minute,
   currentPartnerId,
   currentPartnerName,
   onConfirm,
@@ -69,8 +71,15 @@ export default function EditBookingDialog({
     });
   };
 
-  const formatHour = (h: number): string => {
-    return `${h.toString().padStart(2, "0")}:00 - ${(h + 1).toString().padStart(2, "0")}:00`;
+  const formatHour = (h: number, m: number): string => {
+    const startMin = h * 60 + m;
+    const endMin = startMin + 60;
+    const fmt = (mins: number) => {
+      const hh = Math.floor(mins / 60).toString().padStart(2, "0");
+      const mm = (mins % 60).toString().padStart(2, "0");
+      return `${hh}:${mm}`;
+    };
+    return `${fmt(startMin)} - ${fmt(endMin)}`;
   };
 
   if (!isOpen) return null;
@@ -151,7 +160,7 @@ export default function EditBookingDialog({
                     {t.booking.time}
                   </div>
                   <div className="font-medium text-[var(--stone-800)] text-sm">
-                    {formatHour(hour)}
+                    {formatHour(hour, minute)}
                   </div>
                 </div>
               </div>

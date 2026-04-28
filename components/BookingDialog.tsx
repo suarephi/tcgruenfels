@@ -19,6 +19,7 @@ interface BookingDialogProps {
   isOpen: boolean;
   date: string;
   hour: number;
+  minute: number;
   onConfirm: (partnerIds: string[]) => void;
   onCancel: () => void;
   loading: boolean;
@@ -29,6 +30,7 @@ export default function BookingDialog({
   isOpen,
   date,
   hour,
+  minute,
   onConfirm,
   onCancel,
   loading,
@@ -71,9 +73,15 @@ export default function BookingDialog({
     });
   };
 
-  const formatHour = (h: number): string => {
-    const endHour = tournamentMatch ? h + 2 : h + 1;
-    return `${h.toString().padStart(2, "0")}:00 - ${endHour.toString().padStart(2, "0")}:00`;
+  const formatHour = (h: number, m: number): string => {
+    const startMin = h * 60 + m;
+    const endMin = startMin + (tournamentMatch ? 120 : 60);
+    const fmt = (mins: number) => {
+      const hh = Math.floor(mins / 60).toString().padStart(2, "0");
+      const mm = (mins % 60).toString().padStart(2, "0");
+      return `${hh}:${mm}`;
+    };
+    return `${fmt(startMin)} - ${fmt(endMin)}`;
   };
 
   if (!isOpen) return null;
@@ -162,7 +170,7 @@ export default function BookingDialog({
                     {t.booking.time}
                   </div>
                   <div className="font-medium text-[var(--stone-800)] text-sm">
-                    {formatHour(hour)}
+                    {formatHour(hour, minute)}
                   </div>
                 </div>
               </div>

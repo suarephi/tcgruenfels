@@ -14,12 +14,21 @@ export interface Booking {
   partner_id: string | null;
   date: string;
   hour: number;
+  minute: number;
   notes: string | null;
   created_at: string;
   first_name?: string;
   last_name?: string;
   partner_first_name?: string;
   partner_last_name?: string;
+}
+
+// 60-minute slots can start at :00 or :30. Two slots overlap when their
+// starts are within 60 minutes of each other on the same date.
+export function slotsOverlap(
+  h1: number, m1: number, h2: number, m2: number
+): boolean {
+  return Math.abs((h1 * 60 + m1) - (h2 * 60 + m2)) < 60;
 }
 
 export async function getProfileById(id: string): Promise<Profile | null> {
@@ -81,7 +90,8 @@ export async function getBookingsForDateRange(
     .gte("date", startDate)
     .lte("date", endDate)
     .order("date")
-    .order("hour");
+    .order("hour")
+    .order("minute");
 
   if (error || !bookings) {
     console.error("Error fetching bookings:", error);
@@ -101,6 +111,7 @@ export async function getBookingsForDateRange(
       partner_id: booking.partner_id,
       date: booking.date,
       hour: booking.hour,
+      minute: booking.minute ?? 0,
       notes: booking.notes || null,
       created_at: booking.created_at,
       first_name: user?.first_name || "User",
@@ -136,6 +147,7 @@ export async function getBookingById(id: number): Promise<Booking | null> {
     partner_id: data.partner_id,
     date: data.date,
     hour: data.hour,
+    minute: data.minute ?? 0,
     notes: data.notes || null,
     created_at: data.created_at,
     first_name: user?.first_name,
@@ -159,31 +171,58 @@ export async function getUserBookingsForDate(
   return data as Booking[];
 }
 
-export async function getBookingByDateAndHour(
+export async function getBookingByDateAndSlot(
   date: string,
-  hour: number
+  hour: number,
+  minute: number = 0
 ): Promise<Booking | null> {
   const { data, error } = await supabase
     .from("bookings")
     .select("*")
     .eq("date", date)
     .eq("hour", hour)
+    .eq("minute", minute)
     .single();
 
   if (error || !data) return null;
   return data as Booking;
 }
 
+// Returns the first existing booking that overlaps the given 60-minute slot,
+// or null if the slot is free. Use this for conflict checks instead of
+// the exact (date, hour, minute) match — a 16:30 booking conflicts with
+// a 16:00 one and vice versa.
+export async function getOverlappingBooking(
+  date: string,
+  hour: number,
+  minute: number = 0
+): Promise<Booking | null> {
+  const newStart = hour * 60 + minute;
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("*")
+    .eq("date", date)
+    .gte("hour", hour - 1)
+    .lte("hour", hour + 1);
+  if (error || !data) return null;
+  for (const b of data) {
+    const bStart = b.hour * 60 + (b.minute ?? 0);
+    if (Math.abs(bStart - newStart) < 60) return b as Booking;
+  }
+  return null;
+}
+
 export async function createBooking(
   userId: string,
   date: string,
   hour: number,
+  minute: number = 0,
   partnerId: string | null = null,
   notes: string | null = null
 ): Promise<number> {
   const { data, error } = await supabase
     .from("bookings")
-    .insert({ user_id: userId, date, hour, partner_id: partnerId, notes })
+    .insert({ user_id: userId, date, hour, minute, partner_id: partnerId, notes })
     .select("id")
     .single();
 
