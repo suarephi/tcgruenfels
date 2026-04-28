@@ -180,9 +180,14 @@ export default function BookingDialog({
           {/* Partner Selection - up to 3 for doubles (hidden for tournament matches) */}
           {!tournamentMatch && (
             <div>
-              <label className="block text-sm font-medium text-[var(--stone-700)] mb-2">
+              <label className="block text-sm font-medium text-[var(--stone-700)] mb-1">
                 {language === "de" ? "Mitspieler (bis zu 3 für Doppel)" : "Partners (up to 3 for doubles)"}
               </label>
+              <p className="text-xs text-[var(--stone-500)] mb-2">
+                {language === "de"
+                  ? "Mitspieler erhalten eine E-Mail und sehen die Buchung in „Meine Buchungen“."
+                  : "Partners get an email and see the booking under \"My Bookings\"."}
+              </p>
               <div className="space-y-2">
                 {[0, 1, 2].map((index) => (
                   <div key={index}>

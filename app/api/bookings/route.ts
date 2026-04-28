@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import {
   getBookingsForDateRange,
@@ -8,6 +9,63 @@ import {
   getProfileById,
 } from "@/lib/db";
 import { getActiveTournamentsForUser } from "@/lib/tournaments";
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+async function notifyPartner(opts: {
+  partnerId: string;
+  bookerName: string;
+  date: string;
+  hour: number;
+  minute: number;
+}) {
+  const apiKey = process.env.BREVO_API_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!apiKey || !supabaseUrl || !serviceKey) return;
+
+  const admin = createClient(supabaseUrl, serviceKey);
+  const { data, error } = await admin.auth.admin.getUserById(opts.partnerId);
+  if (error || !data?.user?.email) return;
+  const partnerEmail = data.user.email;
+  // Skip placeholder accounts (training, etc.)
+  if (partnerEmail.endsWith("@tcgruenfels.local") || partnerEmail.endsWith("@skedda.test")) return;
+
+  const fromEmail = process.env.CONTACT_FROM_EMAIL || "noreply@tcgf.ch";
+  const startMin = opts.hour * 60 + opts.minute;
+  const endMin = startMin + 60;
+  const fmtTime = (m: number) =>
+    `${Math.floor(m / 60).toString().padStart(2, "0")}:${(m % 60).toString().padStart(2, "0")}`;
+  const dateStr = new Date(opts.date + "T12:00:00").toLocaleDateString("de-CH", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric",
+  });
+
+  const html = `
+    <p>${escapeHtml(opts.bookerName)} hat dich als Mitspieler für eine Platzbuchung am TC Grünfels eingetragen.</p>
+    <p><strong>${escapeHtml(dateStr)}</strong><br>${fmtTime(startMin)} – ${fmtTime(endMin)}</p>
+    <p>Du findest die Buchung in deinem Mitgliederbereich unter „Meine Buchungen".</p>
+    <p><a href="https://tcgf.ch/my-bookings">https://tcgf.ch/my-bookings</a></p>
+  `;
+
+  await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "api-key": apiKey,
+      "content-type": "application/json",
+      accept: "application/json",
+    },
+    body: JSON.stringify({
+      sender: { name: "TC Grünfels", email: fromEmail },
+      to: [{ email: partnerEmail }],
+      subject: `Du wurdest zu einer Platzbuchung hinzugefügt — ${dateStr}, ${fmtTime(startMin)}`,
+      htmlContent: html,
+    }),
+  }).catch((e) => console.error("Brevo notify partner failed:", e));
+}
 
 // Swiss timezone
 const TIMEZONE = "Europe/Zurich";
@@ -175,6 +233,23 @@ export async function POST(request: NextRequest) {
     // For 2-hour bookings, create the second booking
     if (bookTwoHours) {
       await createBooking(userId, date, hour + 1, minute, effectivePartnerId, notes || null);
+    }
+
+    // Notify all partners in the partnerIds list (for doubles, multiple).
+    // Best-effort — failures are logged but don't surface to the client.
+    const partnersToNotify = (partnerIds && partnerIds.length > 0)
+      ? partnerIds
+      : (partnerId ? [partnerId] : []);
+    if (partnersToNotify.length > 0) {
+      const bookerProfile = await getProfileById(userId);
+      const bookerName = bookerProfile
+        ? `${bookerProfile.first_name} ${bookerProfile.last_name}`.trim()
+        : "Ein Mitglied";
+      await Promise.allSettled(
+        partnersToNotify.map((pid: string) =>
+          notifyPartner({ partnerId: pid, bookerName, date, hour, minute })
+        )
+      );
     }
 
     return NextResponse.json({ id: bookingId }, { status: 201 });

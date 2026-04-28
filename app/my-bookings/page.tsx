@@ -10,12 +10,16 @@ import EditBookingDialog from "@/components/EditBookingDialog";
 
 interface Booking {
   id: number;
+  user_id: string;
   date: string;
   hour: number;
   minute: number;
   partner_id?: string | null;
   partner_first_name?: string;
   partner_last_name?: string;
+  booker_first_name?: string;
+  booker_last_name?: string;
+  is_partner_view?: boolean;
 }
 
 export default function MyBookingsPage() {
@@ -44,13 +48,14 @@ export default function MyBookingsPage() {
     const todayDate = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Zurich" });
     console.log("Filtering bookings from date:", todayDate, "for user:", user.id);
 
-    // First, try a simple query without joins to see if basic access works
+    // Bookings where the current user is either the booker or the partner.
     const { data, error } = await supabase
       .from("bookings")
       .select("*")
-      .eq("user_id", user.id)
+      .or(`user_id.eq.${user.id},partner_id.eq.${user.id}`)
       .order("date", { ascending: true })
-      .order("hour", { ascending: true });
+      .order("hour", { ascending: true })
+      .order("minute", { ascending: true });
 
     console.log("My bookings query result:", { data, error });
 
@@ -59,16 +64,37 @@ export default function MyBookingsPage() {
     }
 
     if (data && data.length > 0) {
-      // Now fetch partner names separately if needed
-      setBookings(data.map((b: any) => ({
-        id: b.id,
-        date: b.date,
-        hour: b.hour,
-        minute: b.minute ?? 0,
-        partner_id: b.partner_id,
-        partner_first_name: undefined,
-        partner_last_name: undefined,
-      })));
+      // Resolve booker / partner names for display.
+      const ids = new Set<string>();
+      data.forEach((b: any) => {
+        if (b.user_id) ids.add(b.user_id);
+        if (b.partner_id) ids.add(b.partner_id);
+      });
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name")
+        .in("id", Array.from(ids));
+      const profileMap = new Map<string, { first_name: string; last_name: string }>();
+      profiles?.forEach((p: any) => profileMap.set(p.id, p));
+
+      setBookings(data.map((b: any) => {
+        const isPartnerView = b.user_id !== user.id;
+        const booker = profileMap.get(b.user_id);
+        const partner = b.partner_id ? profileMap.get(b.partner_id) : null;
+        return {
+          id: b.id,
+          user_id: b.user_id,
+          date: b.date,
+          hour: b.hour,
+          minute: b.minute ?? 0,
+          partner_id: b.partner_id,
+          partner_first_name: partner?.first_name,
+          partner_last_name: partner?.last_name,
+          booker_first_name: booker?.first_name,
+          booker_last_name: booker?.last_name,
+          is_partner_view: isPartnerView,
+        };
+      }));
     } else {
       console.log("No bookings found for user:", user.id);
     }
@@ -280,7 +306,15 @@ export default function MyBookingsPage() {
                     <div className="text-[var(--stone-600)] mt-0.5">
                       {formatHour(booking.hour, booking.minute)}
                     </div>
-                    {booking.partner_first_name && (
+                    {booking.is_partner_view && booking.booker_first_name && (
+                      <div className="text-sm text-[var(--stone-500)] mt-1 flex items-center gap-1">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        {language === "de" ? "Gebucht von" : "Booked by"} {booking.booker_first_name} {booking.booker_last_name}
+                      </div>
+                    )}
+                    {!booking.is_partner_view && booking.partner_first_name && (
                       <div className="text-sm text-[var(--stone-500)] mt-1 flex items-center gap-1">
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -290,24 +324,26 @@ export default function MyBookingsPage() {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => openEditDialog(booking)}
-                    disabled={cancelLoading === booking.id || editLoading === booking.id}
-                    className="text-sm font-medium px-3 py-1.5 rounded-lg transition-all disabled:opacity-50 hover:bg-[var(--forest-50)]"
-                    style={{ color: 'var(--forest-600)' }}
-                  >
-                    {t.booking.edit}
-                  </button>
-                  <button
-                    onClick={() => handleCancel(booking.id)}
-                    disabled={cancelLoading === booking.id || editLoading === booking.id}
-                    className="text-sm font-medium px-3 py-1.5 rounded-lg transition-all disabled:opacity-50 hover:bg-red-50"
-                    style={{ color: '#dc2626' }}
-                  >
-                    {cancelLoading === booking.id ? "..." : t.booking.cancel}
-                  </button>
-                </div>
+                {!booking.is_partner_view && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => openEditDialog(booking)}
+                      disabled={cancelLoading === booking.id || editLoading === booking.id}
+                      className="text-sm font-medium px-3 py-1.5 rounded-lg transition-all disabled:opacity-50 hover:bg-[var(--forest-50)]"
+                      style={{ color: 'var(--forest-600)' }}
+                    >
+                      {t.booking.edit}
+                    </button>
+                    <button
+                      onClick={() => handleCancel(booking.id)}
+                      disabled={cancelLoading === booking.id || editLoading === booking.id}
+                      className="text-sm font-medium px-3 py-1.5 rounded-lg transition-all disabled:opacity-50 hover:bg-red-50"
+                      style={{ color: '#dc2626' }}
+                    >
+                      {cancelLoading === booking.id ? "..." : t.booking.cancel}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}
