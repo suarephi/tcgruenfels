@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useEffect, ReactNode } from "react";
 import { Language, translations, Translations } from "./translations";
 
 interface LanguageContextType {
@@ -18,22 +18,15 @@ const defaultContext: LanguageContextType = {
 const LanguageContext = createContext<LanguageContextType>(defaultContext);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<Language>("de");
-
+  // Site is German-only. Earlier versions stored an EN preference in
+  // localStorage; clear it so existing users don't get stuck in English.
   useEffect(() => {
-    // Load saved language preference on client
-    const saved = localStorage.getItem("language") as Language;
-    if (saved && (saved === "en" || saved === "de")) {
-      setLanguageState(saved);
-    }
+    try { localStorage.removeItem("language"); } catch {}
   }, []);
 
-  const setLanguage = (lang: Language) => {
-    setLanguageState(lang);
-    localStorage.setItem("language", lang);
-  };
-
-  const t = translations[language];
+  const language: Language = "de";
+  const setLanguage = () => {};
+  const t = translations.de;
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t }}>
