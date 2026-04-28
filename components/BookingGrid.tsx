@@ -657,12 +657,13 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
                     <td
                       key={key}
                       rowSpan={spanTwo ? 2 : 1}
-                      className={`p-2 border-r border-[var(--stone-100)] last:border-r-0 ${
+                      style={{ height: 1 }}
+                      className={`p-2 border-r border-[var(--stone-100)] last:border-r-0 align-stretch ${
                         !canBook ? "bg-[var(--cream-100)]" : ""
                       }`}
                     >
                       {booking ? (
-                        <div className={`rounded-lg p-2 text-sm ${isMyBooking ? "slot-mine" : "slot-booked"} group relative`}>
+                        <div className={`rounded-lg p-2 text-sm h-full min-h-[52px] flex flex-col justify-center ${isMyBooking ? "slot-mine" : "slot-booked"} group relative`}>
                           <div className={`font-medium ${isMyBooking ? "text-white" : "text-[var(--stone-600)]"}`}>
                             {booking.notes ? (
                               /* Tournament booking - show players from notes */
@@ -720,7 +721,9 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
                         <button
                           onClick={() => openBookingDialog(date, hour, minute)}
                           disabled={isLoading}
-                          className="w-full h-full min-h-[52px] slot-available rounded-lg text-sm font-medium disabled:opacity-50"
+                          className={`w-full h-full slot-available rounded-lg text-sm font-medium disabled:opacity-50 ${
+                            minute === 0 ? "min-h-[52px]" : "min-h-[36px] text-xs opacity-80"
+                          }`}
                         >
                           {isLoading ? (
                             <div
@@ -732,7 +735,9 @@ export default function BookingGrid({ viewAsUserId, tournamentMatch, onTournamen
                           )}
                         </button>
                       ) : (
-                        <div className="w-full h-full min-h-[52px] slot-unavailable rounded-lg flex items-center justify-center text-sm">
+                        <div className={`w-full h-full slot-unavailable rounded-lg flex items-center justify-center text-sm ${
+                          minute === 0 ? "min-h-[52px]" : "min-h-[36px]"
+                        }`}>
                           —
                         </div>
                       )}
