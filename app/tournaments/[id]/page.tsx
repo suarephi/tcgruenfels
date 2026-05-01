@@ -9,7 +9,7 @@ import TournamentBracket from "@/components/TournamentBracket";
 import GroupStandings from "@/components/GroupStandings";
 import MatchResultDialog from "@/components/MatchResultDialog";
 import ManualBracketEditor from "@/components/ManualBracketEditor";
-import { formatParticipantName } from "@/lib/tournaments";
+import { formatParticipantName, formatParticipantLines } from "@/lib/tournaments";
 
 interface TournamentSettings {
   groups_count: number;
@@ -363,6 +363,11 @@ export default function TournamentDetailPage() {
   const getParticipantName = (participant?: Participant) => {
     if (!participant) return t.tournament.bye;
     return formatParticipantName(participant);
+  };
+
+  const getParticipantLines = (participant?: Participant): string[] => {
+    if (!participant) return [t.tournament.bye];
+    return formatParticipantLines(participant);
   };
 
   const canEditMatch = (match: Match) => {
@@ -781,7 +786,7 @@ export default function TournamentDetailPage() {
               </h1>
               {getStatusBadge(tournament.status)}
             </div>
-            <div className="flex items-center gap-4 text-[var(--stone-500)]">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm sm:text-base text-[var(--stone-500)]">
               <span>
                 {tournament.type === "singles" ? t.tournament.singles : t.tournament.doubles}
               </span>
@@ -890,8 +895,8 @@ export default function TournamentDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-[var(--stone-200)] mb-6">
-        <div className="flex gap-1">
+      <div className="border-b border-[var(--stone-200)] mb-6 -mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto">
+        <div className="flex gap-1 min-w-max">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -972,12 +977,12 @@ export default function TournamentDetailPage() {
                 return (
                 <div
                   key={match.id}
-                  className={`card-elevated p-4 flex items-center justify-between ${
+                  className={`card-elevated p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${
                     isViewAsUserMatch ? "ring-2 ring-[var(--terracotta-300)] bg-[var(--terracotta-50)]" : ""
                   }`}
                 >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 text-sm text-[var(--stone-500)] mb-1">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-[var(--stone-500)] mb-1.5">
                       {match.stage === "group" && (
                         <span>{t.tournament.group} {match.group_number}</span>
                       )}
@@ -993,29 +998,37 @@ export default function TournamentDetailPage() {
                         </>
                       )}
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`font-medium ${
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                      <div
+                        className={`font-medium leading-tight min-w-0 ${
                           match.winner_id === match.participant1_id
                             ? "text-[var(--forest-700)]"
                             : "text-[var(--stone-700)]"
                         }`}
                       >
-                        {getParticipantName(match.participant1)}
-                      </span>
-                      <span className="text-[var(--stone-400)]">{t.tournament.vs}</span>
-                      <span
-                        className={`font-medium ${
+                        {getParticipantLines(match.participant1).map((line, i) => (
+                          <div key={i} className={i === 0 ? "" : "text-sm opacity-80"}>
+                            {line}
+                          </div>
+                        ))}
+                      </div>
+                      <span className="text-xs sm:text-base text-[var(--stone-400)]">{t.tournament.vs}</span>
+                      <div
+                        className={`font-medium leading-tight min-w-0 ${
                           match.winner_id === match.participant2_id
                             ? "text-[var(--forest-700)]"
                             : "text-[var(--stone-700)]"
                         }`}
                       >
-                        {getParticipantName(match.participant2)}
-                      </span>
+                        {getParticipantLines(match.participant2).map((line, i) => (
+                          <div key={i} className={i === 0 ? "" : "text-sm opacity-80"}>
+                            {line}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 sm:shrink-0">
                     {match.score ? (
                       <span className="font-mono text-[var(--stone-600)]">{match.score}</span>
                     ) : (
@@ -1038,7 +1051,6 @@ export default function TournamentDetailPage() {
                         className="text-sm font-medium px-3 py-1.5 rounded-lg transition-all hover:bg-[var(--forest-50)]"
                         style={{ color: "var(--forest-600)" }}
                       >
-                        {/* Show "Advance" for bye matches, "Enter Score" for normal matches */}
                         {!match.participant1_id || !match.participant2_id
                           ? (language === "de" ? "Weiter" : "Advance")
                           : t.tournament.enterScore}
@@ -1066,29 +1078,36 @@ export default function TournamentDetailPage() {
                 <p className="text-[var(--stone-500)]">{t.tournament.noParticipants}</p>
               </div>
             ) : (
-              participants.map((participant, idx) => (
+              participants.map((participant, idx) => {
+                const lines = getParticipantLines(participant);
+                return (
                 <div
                   key={participant.id}
-                  className="card-elevated p-4 flex items-center justify-between"
+                  className="card-elevated p-4 flex items-center justify-between gap-3"
                 >
-                  <div className="flex items-center gap-4">
-                    <span className="w-8 h-8 rounded-full bg-[var(--cream-200)] flex items-center justify-center text-sm font-medium text-[var(--stone-600)]">
+                  <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                    <span className="shrink-0 w-8 h-8 rounded-full bg-[var(--cream-200)] flex items-center justify-center text-sm font-medium text-[var(--stone-600)]">
                       {idx + 1}
                     </span>
-                    <div>
-                      <span className="font-medium text-[var(--stone-800)]">
-                        {getParticipantName(participant)}
-                      </span>
+                    <div className="min-w-0 leading-tight">
+                      <div className="font-medium text-[var(--stone-800)] truncate">
+                        {lines[0]}
+                      </div>
+                      {lines[1] && (
+                        <div className="text-sm text-[var(--stone-600)] truncate">
+                          {lines[1]}
+                        </div>
+                      )}
                       {participant.group_number && (
-                        <span className="ml-2 text-sm text-[var(--stone-500)]">
+                        <div className="text-xs text-[var(--stone-500)] mt-0.5">
                           {t.tournament.group} {participant.group_number}
-                        </span>
+                        </div>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                     {participant.seed && (
-                      <span className="text-sm text-[var(--stone-500)]">
+                      <span className="hidden sm:inline text-sm text-[var(--stone-500)]">
                         {t.tournament.seed} #{participant.seed}
                       </span>
                     )}
@@ -1104,7 +1123,7 @@ export default function TournamentDetailPage() {
                     )}
                   </div>
                 </div>
-              ))
+              );})
             )}
           </div>
         )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useLanguage } from "@/lib/LanguageContext";
-import { formatParticipantName } from "@/lib/tournaments";
+import { formatParticipantLines } from "@/lib/tournaments";
 
 interface Participant {
   id: string;
@@ -52,8 +52,8 @@ export default function GroupStandings({
 }: GroupStandingsProps) {
   const { t } = useLanguage();
 
-  const getParticipantName = (participant: Participant) =>
-    formatParticipantName(participant);
+  const getParticipantLines = (participant: Participant): string[] =>
+    formatParticipantLines(participant);
 
   const calculateStandings = (
     groupParticipants: Participant[],
@@ -183,50 +183,57 @@ export default function GroupStandings({
               <table className="w-full">
                 <thead>
                   <tr className="text-xs text-[var(--stone-500)] uppercase tracking-wider border-b border-[var(--stone-100)]">
-                    <th className="text-left px-4 py-3 w-8">#</th>
-                    <th className="text-left px-4 py-3">Player</th>
-                    <th className="text-center px-2 py-3 w-10">{t.tournament.played}</th>
-                    <th className="text-center px-2 py-3 w-10">{t.tournament.won}</th>
-                    <th className="text-center px-2 py-3 w-10">{t.tournament.lost}</th>
-                    <th className="text-center px-2 py-3 w-16">Sets</th>
-                    <th className="text-center px-2 py-3 w-16">Games</th>
-                    <th className="text-center px-2 py-3 w-12">{t.tournament.points}</th>
+                    <th className="text-left px-2 sm:px-4 py-3 w-8">#</th>
+                    <th className="text-left px-2 sm:px-4 py-3">Player</th>
+                    <th className="text-center px-1 sm:px-2 py-3 w-8 sm:w-10">{t.tournament.played}</th>
+                    <th className="hidden sm:table-cell text-center px-2 py-3 w-10">{t.tournament.won}</th>
+                    <th className="hidden sm:table-cell text-center px-2 py-3 w-10">{t.tournament.lost}</th>
+                    <th className="hidden md:table-cell text-center px-2 py-3 w-16">Sets</th>
+                    <th className="hidden md:table-cell text-center px-2 py-3 w-16">Games</th>
+                    <th className="text-center px-1 sm:px-2 py-3 w-10 sm:w-12">{t.tournament.points}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {standings.map((standing, idx) => (
-                    <tr
-                      key={standing.participant.id}
-                      className="border-b border-[var(--stone-50)] last:border-0 hover:bg-[var(--cream-50)]"
-                    >
-                      <td className="px-4 py-3 text-sm text-[var(--stone-500)]">{idx + 1}</td>
-                      <td className="px-4 py-3">
-                        <span className="font-medium text-[var(--stone-800)]">
-                          {getParticipantName(standing.participant)}
-                        </span>
-                      </td>
-                      <td className="text-center px-2 py-3 text-sm text-[var(--stone-600)]">
-                        {standing.played}
-                      </td>
-                      <td className="text-center px-2 py-3 text-sm font-medium text-[var(--forest-600)]">
-                        {standing.won}
-                      </td>
-                      <td className="text-center px-2 py-3 text-sm text-[var(--stone-600)]">
-                        {standing.lost}
-                      </td>
-                      <td className="text-center px-2 py-3 text-sm text-[var(--stone-600)]">
-                        {standing.setsWon}-{standing.setsLost}
-                      </td>
-                      <td className="text-center px-2 py-3 text-sm text-[var(--stone-600)]">
-                        {standing.gamesWon}-{standing.gamesLost}
-                      </td>
-                      <td className="text-center px-2 py-3">
-                        <span className="font-bold text-[var(--stone-800)]">
-                          {standing.points}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                  {standings.map((standing, idx) => {
+                    const lines = getParticipantLines(standing.participant);
+                    return (
+                      <tr
+                        key={standing.participant.id}
+                        className="border-b border-[var(--stone-50)] last:border-0 hover:bg-[var(--cream-50)]"
+                      >
+                        <td className="px-2 sm:px-4 py-3 text-sm text-[var(--stone-500)]">{idx + 1}</td>
+                        <td className="px-2 sm:px-4 py-3 leading-tight">
+                          <div className="font-medium text-[var(--stone-800)]">{lines[0]}</div>
+                          {lines[1] && (
+                            <div className="text-xs text-[var(--stone-500)]">{lines[1]}</div>
+                          )}
+                          <div className="sm:hidden mt-1 text-xs text-[var(--stone-500)] font-mono">
+                            {standing.won}W-{standing.lost}L · {standing.setsWon}-{standing.setsLost} sets · {standing.gamesWon}-{standing.gamesLost} games
+                          </div>
+                        </td>
+                        <td className="text-center px-1 sm:px-2 py-3 text-sm text-[var(--stone-600)]">
+                          {standing.played}
+                        </td>
+                        <td className="hidden sm:table-cell text-center px-2 py-3 text-sm font-medium text-[var(--forest-600)]">
+                          {standing.won}
+                        </td>
+                        <td className="hidden sm:table-cell text-center px-2 py-3 text-sm text-[var(--stone-600)]">
+                          {standing.lost}
+                        </td>
+                        <td className="hidden md:table-cell text-center px-2 py-3 text-sm text-[var(--stone-600)]">
+                          {standing.setsWon}-{standing.setsLost}
+                        </td>
+                        <td className="hidden md:table-cell text-center px-2 py-3 text-sm text-[var(--stone-600)]">
+                          {standing.gamesWon}-{standing.gamesLost}
+                        </td>
+                        <td className="text-center px-1 sm:px-2 py-3">
+                          <span className="font-bold text-[var(--stone-800)]">
+                            {standing.points}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

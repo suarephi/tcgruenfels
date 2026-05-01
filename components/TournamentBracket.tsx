@@ -1,7 +1,7 @@
 "use client";
 
 import { useLanguage } from "@/lib/LanguageContext";
-import { formatParticipantName } from "@/lib/tournaments";
+import { formatParticipantLines } from "@/lib/tournaments";
 
 interface Participant {
   id: string;
@@ -68,9 +68,9 @@ export default function TournamentBracket({
   const sortedRounds = Array.from(rounds.entries()).sort((a, b) => a[0] - b[0]);
   const totalRounds = sortedRounds.length;
 
-  const getParticipantName = (participant?: Participant) => {
-    if (!participant) return t.tournament.bye;
-    return formatParticipantName(participant);
+  const getParticipantLines = (participant?: Participant): string[] => {
+    if (!participant) return [t.tournament.bye];
+    return formatParticipantLines(participant);
   };
 
   const getRoundName = (roundIndex: number, total: number) => {
@@ -82,8 +82,8 @@ export default function TournamentBracket({
   };
 
   return (
-    <div className="overflow-x-auto pb-4">
-      <div className="flex gap-8 min-w-max">
+    <div className="overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
+      <div className="flex gap-4 sm:gap-8 min-w-max">
         {sortedRounds.map(([round, roundMatches], roundIndex) => {
           // Sort matches by match_number
           const sortedMatches = [...roundMatches].sort(
@@ -121,20 +121,20 @@ export default function TournamentBracket({
                     <div
                       key={match.id}
                       onClick={() => isClickable && onMatchClick(match)}
-                      className={`w-48 rounded-lg border border-[var(--stone-200)] bg-white overflow-hidden shadow-sm ${
+                      className={`w-40 sm:w-48 rounded-lg border border-[var(--stone-200)] bg-white overflow-hidden shadow-sm ${
                         isClickable ? "cursor-pointer hover:border-[var(--forest-300)] hover:shadow-md transition-all" : ""
                       }`}
                     >
                       {/* Player 1 */}
                       <div
-                        className={`px-3 py-2 flex items-center justify-between border-b border-[var(--stone-100)] ${
+                        className={`px-3 py-2 flex items-center justify-between gap-2 border-b border-[var(--stone-100)] ${
                           match.winner_id === match.participant1_id
                             ? "bg-[var(--forest-50)]"
                             : ""
                         }`}
                       >
-                        <span
-                          className={`text-sm truncate flex-1 ${
+                        <div
+                          className={`flex-1 min-w-0 leading-tight ${
                             match.winner_id === match.participant1_id
                               ? "font-semibold text-[var(--forest-700)]"
                               : match.winner_id && match.winner_id !== match.participant1_id
@@ -142,10 +142,17 @@ export default function TournamentBracket({
                               : "text-[var(--stone-700)]"
                           }`}
                         >
-                          {getParticipantName(p1)}
-                        </span>
+                          {getParticipantLines(p1).map((line, i) => (
+                            <div
+                              key={i}
+                              className={`truncate ${i === 0 ? "text-sm" : "text-xs opacity-80"}`}
+                            >
+                              {line}
+                            </div>
+                          ))}
+                        </div>
                         {match.score && (
-                          <span className="text-xs font-mono text-[var(--stone-500)] ml-2">
+                          <span className="text-xs font-mono text-[var(--stone-500)] shrink-0">
                             {match.score.split(",")[0]}
                           </span>
                         )}
@@ -153,14 +160,14 @@ export default function TournamentBracket({
 
                       {/* Player 2 */}
                       <div
-                        className={`px-3 py-2 flex items-center justify-between ${
+                        className={`px-3 py-2 flex items-center justify-between gap-2 ${
                           match.winner_id === match.participant2_id
                             ? "bg-[var(--forest-50)]"
                             : ""
                         }`}
                       >
-                        <span
-                          className={`text-sm truncate flex-1 ${
+                        <div
+                          className={`flex-1 min-w-0 leading-tight ${
                             match.winner_id === match.participant2_id
                               ? "font-semibold text-[var(--forest-700)]"
                               : match.winner_id && match.winner_id !== match.participant2_id
@@ -168,10 +175,17 @@ export default function TournamentBracket({
                               : "text-[var(--stone-700)]"
                           }`}
                         >
-                          {getParticipantName(p2)}
-                        </span>
+                          {getParticipantLines(p2).map((line, i) => (
+                            <div
+                              key={i}
+                              className={`truncate ${i === 0 ? "text-sm" : "text-xs opacity-80"}`}
+                            >
+                              {line}
+                            </div>
+                          ))}
+                        </div>
                         {match.score && (
-                          <span className="text-xs font-mono text-[var(--stone-500)] ml-2">
+                          <span className="text-xs font-mono text-[var(--stone-500)] shrink-0">
                             {match.score.split(",")[1]?.trim() || ""}
                           </span>
                         )}
@@ -202,7 +216,7 @@ export default function TournamentBracket({
                 const finalMatch = sortedRounds[totalRounds - 1]?.[1]?.[0];
                 if (!finalMatch?.winner_id) {
                   return (
-                    <div className="w-48 rounded-lg border-2 border-dashed border-[var(--stone-200)] bg-[var(--cream-50)] p-4 text-center">
+                    <div className="w-40 sm:w-48 rounded-lg border-2 border-dashed border-[var(--stone-200)] bg-[var(--cream-50)] p-4 text-center">
                       <span className="text-sm text-[var(--stone-400)]">TBD</span>
                     </div>
                   );
@@ -210,11 +224,15 @@ export default function TournamentBracket({
 
                 const winner = participants.find((p) => p.id === finalMatch.winner_id);
                 return (
-                  <div className="w-48 rounded-lg border-2 border-[var(--terracotta-300)] bg-gradient-to-br from-[var(--terracotta-50)] to-[var(--cream-100)] p-4 text-center shadow-md">
+                  <div className="w-40 sm:w-48 rounded-lg border-2 border-[var(--terracotta-300)] bg-gradient-to-br from-[var(--terracotta-50)] to-[var(--cream-100)] p-4 text-center shadow-md">
                     <div className="text-2xl mb-2">🏆</div>
-                    <span className="font-semibold text-[var(--stone-800)]">
-                      {getParticipantName(winner)}
-                    </span>
+                    <div className="font-semibold text-[var(--stone-800)] leading-tight">
+                      {getParticipantLines(winner).map((line, i) => (
+                        <div key={i} className={i === 0 ? "" : "text-sm font-medium opacity-80"}>
+                          {line}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 );
               })()}

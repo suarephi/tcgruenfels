@@ -55,6 +55,21 @@ export function formatParticipantName(p: ParticipantNameFields | undefined | nul
   return name || "Unknown";
 }
 
+export function formatParticipantLines(p: ParticipantNameFields | undefined | null): string[] {
+  if (!p) return ["Unknown"];
+  if (p.manual_name) {
+    return p.manual_name.includes("/")
+      ? p.manual_name.split("/").map((s) => s.trim()).filter(Boolean)
+      : [p.manual_name];
+  }
+  const name = `${p.user_first_name || ""} ${p.user_last_name || ""}`.trim();
+  if (p.partner_first_name) {
+    const partnerName = `${p.partner_first_name} ${p.partner_last_name || ""}`.trim();
+    return [name || "Unknown", partnerName];
+  }
+  return [name || "Unknown"];
+}
+
 export interface TournamentMatch {
   id: string;
   tournament_id: string;
