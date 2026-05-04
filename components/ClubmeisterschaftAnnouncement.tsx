@@ -32,18 +32,18 @@ export default function ClubmeisterschaftAnnouncement({ userId }: { userId: stri
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
+      className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 overflow-y-auto animate-fade-in"
       style={{ background: "rgba(28, 22, 16, 0.55)" }}
       onClick={dismiss}
     >
       <div
-        className="card-elevated w-full max-w-md p-6 sm:p-7 relative"
+        className="card-elevated w-full max-w-md p-6 sm:p-7 relative my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={dismiss}
           aria-label="Schliessen"
-          className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center text-[var(--stone-400)] hover:text-[var(--stone-600)] hover:bg-[var(--stone-100)] transition-colors"
+          className="absolute top-2 right-2 w-10 h-10 rounded-full flex items-center justify-center text-[var(--stone-400)] hover:text-[var(--stone-600)] hover:bg-[var(--stone-100)] transition-colors"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
