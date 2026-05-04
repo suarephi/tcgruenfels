@@ -70,7 +70,7 @@ export default function ClubmeisterschaftAnnouncement({ userId }: { userId: stri
           </p>
           <p>
             Du kannst deine Spiele direkt hier auf der Plattform planen und nach dem Match das
-            Resultat selber eintragen, ganz ohne Umweg über Urs.
+            Resultat selber eintragen.
           </p>
           <ul className="list-disc list-inside space-y-1 text-[var(--stone-600)]">
             <li>Spiel suchen unter <strong>Turniere</strong></li>
