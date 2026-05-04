@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import BookingGrid from "@/components/BookingGrid";
+import ClubmeisterschaftAnnouncement from "@/components/ClubmeisterschaftAnnouncement";
 import { useLanguage } from "@/lib/LanguageContext";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 
@@ -22,6 +23,7 @@ interface TournamentMatchContext {
 
 function BookPageContent() {
   const [isAdmin, setIsAdmin] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [viewAsUserId, setViewAsUserId] = useState<string | null>(null);
@@ -58,6 +60,8 @@ function BookPageContent() {
         router.push("/login");
         return;
       }
+
+      setUserId(user.id);
 
       const { data: profile } = await supabase
         .from("profiles")
@@ -107,6 +111,8 @@ function BookPageContent() {
 
   return (
     <div className="py-8 md:py-12">
+      <ClubmeisterschaftAnnouncement userId={userId} />
+
       {/* Tournament Match Banner */}
       {tournamentMatch && (
         <div
