@@ -66,7 +66,7 @@ export default function ClubmeisterschaftAnnouncement({ userId }: { userId: stri
 
         <div className="space-y-3 text-[var(--stone-700)] leading-relaxed text-sm">
           <p>
-            Die Tableaux für <strong>Einzel</strong> und <strong>Doppel</strong> sind aufgeschaltet.
+            Die Tableaus für <strong>Einzel</strong> und <strong>Doppel</strong> sind aufgeschaltet.
           </p>
           <p>
             Du kannst deine Spiele direkt hier auf der Plattform planen und nach dem Match das
