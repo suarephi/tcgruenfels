@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-const STORAGE_KEY_PREFIX = "tcgf-cm26-announcement-seen-";
+const STORAGE_KEY_PREFIX = "tcgf-cm26-announcement-v2-seen-";
 
 export default function ClubmeisterschaftAnnouncement({ userId }: { userId: string | null }) {
   const [open, setOpen] = useState(false);
@@ -67,16 +67,26 @@ export default function ClubmeisterschaftAnnouncement({ userId }: { userId: stri
         <div className="space-y-3 text-[var(--stone-700)] leading-relaxed text-sm">
           <p>
             Die Tableaus für <strong>Einzel</strong> und <strong>Doppel</strong> sind aufgeschaltet.
+            Spiele planen und Resultate eintragen kannst du direkt hier.
           </p>
-          <p>
-            Du kannst deine Spiele direkt hier auf der Plattform planen und nach dem Match das
-            Resultat selber eintragen.
-          </p>
-          <ul className="list-disc list-inside space-y-1 text-[var(--stone-600)]">
+          <div
+            className="rounded-lg p-3 space-y-1"
+            style={{ background: "var(--forest-50)", border: "1px solid var(--forest-200)" }}
+          >
+            <p className="font-medium text-[var(--forest-700)]">
+              Sonderrechte für Turnier&shy;teilnehmer
+            </p>
+            <ul className="list-disc list-inside space-y-0.5 text-[var(--stone-700)]">
+              <li>Direkt buchen über <strong>Termin planen</strong></li>
+              <li>Beliebig weit im Voraus reservieren (sonst max. 3 Tage)</li>
+              <li><strong>2 Stunden</strong> am Stück (sonst 1 Stunde)</li>
+            </ul>
+          </div>
+          <ol className="list-decimal list-inside space-y-1 text-[var(--stone-600)]">
             <li>Spiel suchen unter <strong>Turniere</strong></li>
             <li>Spielzeit über <strong>Termin planen</strong> reservieren</li>
             <li>Nach dem Spiel <strong>Resultat eintragen</strong> klicken</li>
-          </ul>
+          </ol>
           <p className="text-[var(--stone-600)]">
             Viel Spass und gutes Tennis!
           </p>
