@@ -32,26 +32,27 @@ export default function InvoiceAnnouncement({ userId }: { userId: string | null 
     <div
       className="mb-6 p-4 rounded-xl animate-fade-in flex items-start justify-between gap-3"
       style={{
-        background: "linear-gradient(135deg, var(--cream-200) 0%, var(--cream-100) 100%)",
-        border: "1px solid var(--stone-200)",
+        background: "linear-gradient(135deg, var(--terracotta-500) 0%, var(--terracotta-400) 100%)",
+        border: "1px solid var(--terracotta-600)",
+        color: "white",
       }}
     >
       <div className="flex items-start gap-3">
         <div
           className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-          style={{ background: "var(--terracotta-100)" }}
+          style={{ background: "rgba(255,255,255,0.18)" }}
         >
-          <svg className="w-5 h-5 text-[var(--terracotta-700)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
         </div>
-        <div className="text-sm leading-relaxed text-[var(--stone-700)]">
-          <div className="font-medium text-[var(--stone-900)] mb-0.5">
+        <div className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.95)" }}>
+          <div className="font-semibold mb-0.5" style={{ color: "white" }}>
             Mitgliederbeiträge 2026 versandt
           </div>
           <div>
-            Die Rechnung für die Saison 2026 wurde per E-Mail verschickt. Bitte prüfen Sie Ihr Postfach. Fragen an{" "}
-            <a href="mailto:info@tcgf.ch" className="underline hover:text-[var(--stone-900)]">
+            Die Rechnung für die Saison 2026 wurde per E-Mail verschickt. Bitte prüfe dein Postfach. Fragen an{" "}
+            <a href="mailto:info@tcgf.ch" className="underline" style={{ color: "white" }}>
               info@tcgf.ch
             </a>
             .
@@ -61,7 +62,8 @@ export default function InvoiceAnnouncement({ userId }: { userId: string | null 
       <button
         onClick={dismiss}
         aria-label="Schliessen"
-        className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--stone-400)] hover:text-[var(--stone-700)] hover:bg-[var(--stone-100)] transition-colors shrink-0"
+        className="w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0"
+        style={{ color: "rgba(255,255,255,0.85)" }}
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
