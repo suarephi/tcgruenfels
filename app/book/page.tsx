@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import BookingGrid from "@/components/BookingGrid";
 import ClubmeisterschaftAnnouncement from "@/components/ClubmeisterschaftAnnouncement";
+import InvoiceAnnouncement from "@/components/InvoiceAnnouncement";
 import { useLanguage } from "@/lib/LanguageContext";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 
@@ -112,6 +113,8 @@ function BookPageContent() {
   return (
     <div className="py-8 md:py-12">
       <ClubmeisterschaftAnnouncement userId={userId} />
+
+      <InvoiceAnnouncement userId={userId} />
 
       {/* Tournament Match Banner */}
       {tournamentMatch && (
